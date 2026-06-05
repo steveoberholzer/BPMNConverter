@@ -1,0 +1,137 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_097lrv2">
+    <bpmn:participant id="Participant_0s3c2b3" name="GeneralNotification.Workflow.SendNotification" processRef="Process_1" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_1" name="GeneralNotification.Workflow.SendNotification" isExecutable="false">
+    <bpmn:startEvent id="Node_1">
+      <bpmn:outgoing>Flow_0</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Node_4" name="Loop">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+      <bpmn:standardLoopCharacteristics />
+    </bpmn:task>
+    <bpmn:sendTask id="Node_5" name="Send Email">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:serviceTask id="Node_6" name="Delete Header Detail">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:task id="Node_8" name="Loop">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:incoming>Flow_8</bpmn:incoming>
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+      <bpmn:standardLoopCharacteristics />
+    </bpmn:task>
+    <bpmn:serviceTask id="Node_9" name="Delete Recipient">
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1xj8s40</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Node_10">
+      <bpmn:incoming>Flow_1xj8s40</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Node_11" name="Notification Recipients">
+      <bpmn:incoming>Flow_0</bpmn:incoming>
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_0" sourceRef="Node_1" targetRef="Node_11" />
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Node_11" targetRef="Node_4" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Node_5" targetRef="Node_4" />
+    <bpmn:sequenceFlow id="Flow_2" name="Next Item" sourceRef="Node_4" targetRef="Node_5" />
+    <bpmn:sequenceFlow id="Flow_3" name="Complete" sourceRef="Node_4" targetRef="Node_6" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Node_6" targetRef="Node_8" />
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="Node_9" targetRef="Node_8" />
+    <bpmn:sequenceFlow id="Flow_7" name="Complete" sourceRef="Node_8" targetRef="Node_9" />
+    <bpmn:sequenceFlow id="Flow_1xj8s40" sourceRef="Node_9" targetRef="Node_10" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Collaboration_097lrv2">
+      <bpmndi:BPMNShape id="Participant_0s3c2b3_di" bpmnElement="Participant_0s3c2b3" isHorizontal="true">
+        <dc:Bounds x="-111" y="10" width="830" height="670" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_1_di" bpmnElement="Node_1" bioc:stroke="#2e7d32" bioc:fill="#c8e6c9" color:background-color="#c8e6c9" color:border-color="#2e7d32">
+        <dc:Bounds x="187" y="40" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_4_di" bpmnElement="Node_4">
+        <dc:Bounds x="155" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_5_di" bpmnElement="Node_5">
+        <dc:Bounds x="-60" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_6_di" bpmnElement="Node_6">
+        <dc:Bounds x="460" y="276" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_8_di" bpmnElement="Node_8">
+        <dc:Bounds x="460" y="410" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_9_di" bpmnElement="Node_9">
+        <dc:Bounds x="460" y="560" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_10_di" bpmnElement="Node_10" bioc:stroke="#b71c1c" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#b71c1c">
+        <dc:Bounds x="662" y="582" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_11_di" bpmnElement="Node_11">
+        <dc:Bounds x="155" y="136" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0_di" bpmnElement="Flow_0">
+        <di:waypoint x="205" y="76" />
+        <di:waypoint x="205" y="136" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="205" y="216" />
+        <di:waypoint x="205" y="276" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="40" y="316" />
+        <di:waypoint x="155" y="316" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="205" y="356" />
+        <di:waypoint x="205" y="490" />
+        <di:waypoint x="-10" y="490" />
+        <di:waypoint x="-10" y="356" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="66" y="473" width="48" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="255" y="316" />
+        <di:waypoint x="460" y="316" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="371" y="280" width="48" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="510" y="356" />
+        <di:waypoint x="510" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8">
+        <di:waypoint x="460" y="600" />
+        <di:waypoint x="310" y="600" />
+        <di:waypoint x="310" y="450" />
+        <di:waypoint x="460" y="450" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="396" y="573" width="48" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7">
+        <di:waypoint x="510" y="490" />
+        <di:waypoint x="510" y="560" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="586" y="583" width="48" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1xj8s40_di" bpmnElement="Flow_1xj8s40">
+        <di:waypoint x="560" y="600" />
+        <di:waypoint x="662" y="600" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

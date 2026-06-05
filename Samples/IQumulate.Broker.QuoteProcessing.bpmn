@@ -1,0 +1,729 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_1" name="IQumulate.Broker.QuoteProcessing" isExecutable="false">
+    <bpmn:startEvent id="Node_1">
+      <bpmn:outgoing>Flow_0</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Node_20000" name="Create Request Reference">
+      <bpmn:incoming>Flow_0</bpmn:incoming>
+      <bpmn:outgoing>Flow_46</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Node_20001" name="Create Quote Type Reference">
+      <bpmn:incoming>Flow_46</bpmn:incoming>
+      <bpmn:outgoing>Flow_47</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Node_20002" name="Set Folio">
+      <bpmn:incoming>Flow_47</bpmn:incoming>
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Node_3" name="Update Status New Client">
+      <bpmn:incoming>Flow_23</bpmn:incoming>
+      <bpmn:incoming>Flow_24</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Node_12" name="Quote Type Decision">
+      <bpmn:incoming>Flow_15</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+      <bpmn:outgoing>Flow_11</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Node_15" name="Get AU Loan">
+      <bpmn:incoming>Flow_29</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Node_16" name="Get AU Loan Http Response Decision">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+      <bpmn:outgoing>Flow_13</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Node_18" name="Get NZ Loan">
+      <bpmn:incoming>Flow_13</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Node_19" name="NZ Loan Found Decision">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+      <bpmn:outgoing>Flow_22</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Node_200000" name="Get Contract Details">
+      <bpmn:incoming>Flow_8</bpmn:incoming>
+      <bpmn:incoming>Flow_9</bpmn:incoming>
+      <bpmn:outgoing>Flow_48</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Node_200001" name="Get Client Details">
+      <bpmn:incoming>Flow_48</bpmn:incoming>
+      <bpmn:outgoing>Flow_10</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:task id="Node_21" name="Set Region Australia">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Node_22" name="Set Region New Zealand">
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+      <bpmn:outgoing>Flow_9</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Node_23" name="Set Creditor Code from Form">
+      <bpmn:incoming>Flow_11</bpmn:incoming>
+      <bpmn:outgoing>Flow_12</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:serviceTask id="Node_24" name="Get AU Creditor ">
+      <bpmn:incoming>Flow_12</bpmn:incoming>
+      <bpmn:outgoing>Flow_16</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Node_260000" name="Get Australia Credentials">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_49</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Node_260001" name="Get Australia Access Token">
+      <bpmn:incoming>Flow_49</bpmn:incoming>
+      <bpmn:outgoing>Flow_14</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Node_280000" name="Get NZ Credentials">
+      <bpmn:incoming>Flow_14</bpmn:incoming>
+      <bpmn:outgoing>Flow_50</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Node_280001" name="Get NZ Access Token">
+      <bpmn:incoming>Flow_50</bpmn:incoming>
+      <bpmn:outgoing>Flow_15</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Node_29" name="Creditor AU Found Decision">
+      <bpmn:incoming>Flow_16</bpmn:incoming>
+      <bpmn:outgoing>Flow_17</bpmn:outgoing>
+      <bpmn:outgoing>Flow_18</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Node_30" name="Get NZ Creditor ">
+      <bpmn:incoming>Flow_18</bpmn:incoming>
+      <bpmn:outgoing>Flow_19</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Node_31" name="Creditor NZFound Decision">
+      <bpmn:incoming>Flow_19</bpmn:incoming>
+      <bpmn:outgoing>Flow_20</bpmn:outgoing>
+      <bpmn:outgoing>Flow_21</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="Node_34" name="Set Region Australia">
+      <bpmn:incoming>Flow_17</bpmn:incoming>
+      <bpmn:outgoing>Flow_23</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Node_35" name="Set Region New Zealand">
+      <bpmn:incoming>Flow_20</bpmn:incoming>
+      <bpmn:outgoing>Flow_24</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Node_36" name="Set Loan Validation Message">
+      <bpmn:incoming>Flow_22</bpmn:incoming>
+      <bpmn:outgoing>Flow_25</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Node_37" name="Set Broker Validation Message">
+      <bpmn:incoming>Flow_21</bpmn:incoming>
+      <bpmn:outgoing>Flow_26</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:callActivity id="Node_39" name="Call Creditor Contact Workflow">
+      <bpmn:incoming>Flow_27</bpmn:incoming>
+      <bpmn:outgoing>Flow_28</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:serviceTask id="Node_400000" name="Get Broker Contact">
+      <bpmn:incoming>Flow_41</bpmn:incoming>
+      <bpmn:outgoing>Flow_51</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Node_400001" name="Set Client and Total Amount">
+      <bpmn:incoming>Flow_51</bpmn:incoming>
+      <bpmn:outgoing>Flow_27</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Node_41" name="Save Creditor Contact ID">
+      <bpmn:incoming>Flow_28</bpmn:incoming>
+      <bpmn:outgoing>Flow_33</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Node_47" name="Set Status Broker or Loan Not Found">
+      <bpmn:incoming>Flow_25</bpmn:incoming>
+      <bpmn:incoming>Flow_26</bpmn:incoming>
+      <bpmn:outgoing>Flow_39</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Node_52" name="Get Loan Number">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_29</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Node_53" name="Invoices Processed Decision">
+      <bpmn:incoming>Flow_35</bpmn:incoming>
+      <bpmn:incoming>Flow_38</bpmn:incoming>
+      <bpmn:outgoing>Flow_30</bpmn:outgoing>
+      <bpmn:outgoing>Flow_41</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Node_54" name="Set Status No Invoices Processed">
+      <bpmn:incoming>Flow_30</bpmn:incoming>
+      <bpmn:outgoing>Flow_31</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Node_56" name="Update Status Endorsement Renewal">
+      <bpmn:incoming>Flow_10</bpmn:incoming>
+      <bpmn:outgoing>Flow_32</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:callActivity id="Node_57" name="Call Create Quote Workflow">
+      <bpmn:incoming>Flow_33</bpmn:incoming>
+      <bpmn:outgoing>Flow_34</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:endEvent id="Node_58">
+      <bpmn:incoming>Flow_34</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:callActivity id="Node_68" name="Call Analyse Invoices Workflow">
+      <bpmn:incoming>Flow_36</bpmn:incoming>
+      <bpmn:outgoing>Flow_35</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:exclusiveGateway id="Node_69" name="Document Type Decision">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:incoming>Flow_32</bpmn:incoming>
+      <bpmn:outgoing>Flow_36</bpmn:outgoing>
+      <bpmn:outgoing>Flow_37</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:callActivity id="Node_70" name="Call Analyse Statement Workflow">
+      <bpmn:incoming>Flow_37</bpmn:incoming>
+      <bpmn:outgoing>Flow_38</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:sendTask id="Node_82" name="Send Broker Email">
+      <bpmn:incoming>Flow_39</bpmn:incoming>
+    </bpmn:sendTask>
+    <bpmn:serviceTask id="Node_850000" name="Create Email">
+      <bpmn:incoming>Flow_44</bpmn:incoming>
+      <bpmn:incoming>Flow_45</bpmn:incoming>
+      <bpmn:outgoing>Flow_52</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Node_850001" name="Add Attachment">
+      <bpmn:incoming>Flow_52</bpmn:incoming>
+      <bpmn:outgoing>Flow_53</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sendTask id="Node_850002" name="Send Email">
+      <bpmn:incoming>Flow_53</bpmn:incoming>
+      <bpmn:outgoing>Flow_15ghyy6</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:exclusiveGateway id="Node_86" name="Document Type Decision">
+      <bpmn:incoming>Flow_31</bpmn:incoming>
+      <bpmn:outgoing>Flow_42</bpmn:outgoing>
+      <bpmn:outgoing>Flow_43</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:callActivity id="Node_87" name="Call Get Zip Files Workflow">
+      <bpmn:incoming>Flow_42</bpmn:incoming>
+      <bpmn:outgoing>Flow_44</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:serviceTask id="Node_880000" name="Get Statement Reference ID">
+      <bpmn:incoming>Flow_43</bpmn:incoming>
+      <bpmn:outgoing>Flow_54</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Node_880001" name="Get Statement File">
+      <bpmn:incoming>Flow_54</bpmn:incoming>
+      <bpmn:outgoing>Flow_45</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_0" sourceRef="Node_1" targetRef="Node_20000" />
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Node_20002" targetRef="Node_260000" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Node_3" targetRef="Node_69" />
+    <bpmn:sequenceFlow id="Flow_3" name="Endorsement or Renewal" sourceRef="Node_12" targetRef="Node_52" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Node_15" targetRef="Node_16" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Node_18" targetRef="Node_19" />
+    <bpmn:sequenceFlow id="Flow_6" name="Loan Found" sourceRef="Node_16" targetRef="Node_21" />
+    <bpmn:sequenceFlow id="Flow_7" name="Loan Found" sourceRef="Node_19" targetRef="Node_22" />
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="Node_21" targetRef="Node_200000" />
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="Node_22" targetRef="Node_200000" />
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="Node_200001" targetRef="Node_56" />
+    <bpmn:sequenceFlow id="Flow_11" name="New Client" sourceRef="Node_12" targetRef="Node_23" />
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="Node_23" targetRef="Node_24" />
+    <bpmn:sequenceFlow id="Flow_13" name="Loan Not Found" sourceRef="Node_16" targetRef="Node_18" />
+    <bpmn:sequenceFlow id="Flow_14" sourceRef="Node_260001" targetRef="Node_280000" />
+    <bpmn:sequenceFlow id="Flow_15" sourceRef="Node_280001" targetRef="Node_12" />
+    <bpmn:sequenceFlow id="Flow_16" sourceRef="Node_24" targetRef="Node_29" />
+    <bpmn:sequenceFlow id="Flow_17" name="Creditor Found" sourceRef="Node_29" targetRef="Node_34" />
+    <bpmn:sequenceFlow id="Flow_18" name="Creditor Not Found" sourceRef="Node_29" targetRef="Node_30" />
+    <bpmn:sequenceFlow id="Flow_19" sourceRef="Node_30" targetRef="Node_31" />
+    <bpmn:sequenceFlow id="Flow_20" name="Creditor Found" sourceRef="Node_31" targetRef="Node_35" />
+    <bpmn:sequenceFlow id="Flow_21" name="Creditor Not Found" sourceRef="Node_31" targetRef="Node_37" />
+    <bpmn:sequenceFlow id="Flow_22" name="Loan Not Found" sourceRef="Node_19" targetRef="Node_36" />
+    <bpmn:sequenceFlow id="Flow_23" sourceRef="Node_34" targetRef="Node_3" />
+    <bpmn:sequenceFlow id="Flow_24" sourceRef="Node_35" targetRef="Node_3" />
+    <bpmn:sequenceFlow id="Flow_25" sourceRef="Node_36" targetRef="Node_47" />
+    <bpmn:sequenceFlow id="Flow_26" sourceRef="Node_37" targetRef="Node_47" />
+    <bpmn:sequenceFlow id="Flow_27" sourceRef="Node_400001" targetRef="Node_39" />
+    <bpmn:sequenceFlow id="Flow_28" sourceRef="Node_39" targetRef="Node_41" />
+    <bpmn:sequenceFlow id="Flow_29" sourceRef="Node_52" targetRef="Node_15" />
+    <bpmn:sequenceFlow id="Flow_30" name="No Invoices Processed" sourceRef="Node_53" targetRef="Node_54" />
+    <bpmn:sequenceFlow id="Flow_31" sourceRef="Node_54" targetRef="Node_86" />
+    <bpmn:sequenceFlow id="Flow_32" sourceRef="Node_56" targetRef="Node_69" />
+    <bpmn:sequenceFlow id="Flow_33" sourceRef="Node_41" targetRef="Node_57" />
+    <bpmn:sequenceFlow id="Flow_34" sourceRef="Node_57" targetRef="Node_58" />
+    <bpmn:sequenceFlow id="Flow_35" sourceRef="Node_68" targetRef="Node_53" />
+    <bpmn:sequenceFlow id="Flow_36" name="Invoice" sourceRef="Node_69" targetRef="Node_68" />
+    <bpmn:sequenceFlow id="Flow_37" name="Statement" sourceRef="Node_69" targetRef="Node_70" />
+    <bpmn:sequenceFlow id="Flow_38" sourceRef="Node_70" targetRef="Node_53" />
+    <bpmn:sequenceFlow id="Flow_39" sourceRef="Node_47" targetRef="Node_82" />
+    <bpmn:sequenceFlow id="Flow_41" name="Invoices Processed" sourceRef="Node_53" targetRef="Node_400000" />
+    <bpmn:sequenceFlow id="Flow_42" name="Invoices" sourceRef="Node_86" targetRef="Node_87" />
+    <bpmn:sequenceFlow id="Flow_43" name="Statement" sourceRef="Node_86" targetRef="Node_880000" />
+    <bpmn:sequenceFlow id="Flow_44" sourceRef="Node_87" targetRef="Node_850000" />
+    <bpmn:sequenceFlow id="Flow_45" sourceRef="Node_880001" targetRef="Node_850000" />
+    <bpmn:sequenceFlow id="Flow_46" sourceRef="Node_20000" targetRef="Node_20001" />
+    <bpmn:sequenceFlow id="Flow_47" sourceRef="Node_20001" targetRef="Node_20002" />
+    <bpmn:sequenceFlow id="Flow_48" sourceRef="Node_200000" targetRef="Node_200001" />
+    <bpmn:sequenceFlow id="Flow_49" sourceRef="Node_260000" targetRef="Node_260001" />
+    <bpmn:sequenceFlow id="Flow_50" sourceRef="Node_280000" targetRef="Node_280001" />
+    <bpmn:sequenceFlow id="Flow_51" sourceRef="Node_400000" targetRef="Node_400001" />
+    <bpmn:sequenceFlow id="Flow_52" sourceRef="Node_850000" targetRef="Node_850001" />
+    <bpmn:sequenceFlow id="Flow_53" sourceRef="Node_850001" targetRef="Node_850002" />
+    <bpmn:sequenceFlow id="Flow_54" sourceRef="Node_880000" targetRef="Node_880001" />
+    <bpmn:endEvent id="Event_072cxov">
+      <bpmn:incoming>Flow_15ghyy6</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_15ghyy6" sourceRef="Node_850002" targetRef="Event_072cxov" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="Node_3_di" bpmnElement="Node_3">
+        <dc:Bounds x="583" y="2036" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_18_di" bpmnElement="Node_18">
+        <dc:Bounds x="155" y="1616" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_19_di" bpmnElement="Node_19" isMarkerVisible="true">
+        <dc:Bounds x="180" y="1776" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="131" y="1746" width="77" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_22_di" bpmnElement="Node_22">
+        <dc:Bounds x="147" y="1896" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_23_di" bpmnElement="Node_23">
+        <dc:Bounds x="443" y="1226" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_24_di" bpmnElement="Node_24">
+        <dc:Bounds x="443" y="1366" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_29_di" bpmnElement="Node_29" isMarkerVisible="true">
+        <dc:Bounds x="468" y="1506" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="380.5" y="1517" width="77" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_30_di" bpmnElement="Node_30">
+        <dc:Bounds x="435" y="1616" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_31_di" bpmnElement="Node_31" isMarkerVisible="true">
+        <dc:Bounds x="460" y="1776" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="384.5" y="1766" width="89" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_36_di" bpmnElement="Node_36">
+        <dc:Bounds x="287" y="1896" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_37_di" bpmnElement="Node_37">
+        <dc:Bounds x="427" y="1896" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_82_di" bpmnElement="Node_82">
+        <dc:Bounds x="427" y="2190" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_34_di" bpmnElement="Node_34">
+        <dc:Bounds x="750" y="1616" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_47_di" bpmnElement="Node_47">
+        <dc:Bounds x="427" y="2036" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_35_di" bpmnElement="Node_35">
+        <dc:Bounds x="583" y="1896" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_16_di" bpmnElement="Node_16" isMarkerVisible="true">
+        <dc:Bounds x="-7" y="1511" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="-114" y="1505" width="88" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_21_di" bpmnElement="Node_21">
+        <dc:Bounds x="-40" y="1761" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_200000_di" bpmnElement="Node_200000">
+        <dc:Bounds x="-40" y="2041" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_200001_di" bpmnElement="Node_200001">
+        <dc:Bounds x="-40" y="2181" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_52_di" bpmnElement="Node_52">
+        <dc:Bounds x="-32" y="1226" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_15_di" bpmnElement="Node_15">
+        <dc:Bounds x="-32" y="1366" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_12_di" bpmnElement="Node_12" isMarkerVisible="true">
+        <dc:Bounds x="225" y="1241" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="221.5" y="1300.5" width="57" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_280001_di" bpmnElement="Node_280001">
+        <dc:Bounds x="200" y="1090" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_56_di" bpmnElement="Node_56">
+        <dc:Bounds x="147" y="2181" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_53_di" bpmnElement="Node_53" isMarkerVisible="true">
+        <dc:Bounds x="172" y="2576" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="124" y="2550" width="52" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_54_di" bpmnElement="Node_54">
+        <dc:Bounds x="147" y="2686" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_68_di" bpmnElement="Node_68">
+        <dc:Bounds x="147" y="2430" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_70_di" bpmnElement="Node_70">
+        <dc:Bounds x="-30" y="2430" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_86_di" bpmnElement="Node_86" isMarkerVisible="true">
+        <dc:Bounds x="172" y="2846" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="232" y="2857" width="77" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_880000_di" bpmnElement="Node_880000">
+        <dc:Bounds x="147" y="2966" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_69_di" bpmnElement="Node_69" isMarkerVisible="true">
+        <dc:Bounds x="172" y="2326" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="221" y="2315.5" width="77" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_87_di" bpmnElement="Node_87">
+        <dc:Bounds x="-60" y="2966" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_39_di" bpmnElement="Node_39">
+        <dc:Bounds x="730" y="2710" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_400000_di" bpmnElement="Node_400000">
+        <dc:Bounds x="540" y="2561" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_400001_di" bpmnElement="Node_400001">
+        <dc:Bounds x="730" y="2561" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_41_di" bpmnElement="Node_41">
+        <dc:Bounds x="540" y="2710" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_57_di" bpmnElement="Node_57">
+        <dc:Bounds x="540" y="2860" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_880001_di" bpmnElement="Node_880001">
+        <dc:Bounds x="340" y="2966" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_850000_di" bpmnElement="Node_850000">
+        <dc:Bounds x="-60" y="3120" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_850001_di" bpmnElement="Node_850001">
+        <dc:Bounds x="147" y="3230" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_850002_di" bpmnElement="Node_850002">
+        <dc:Bounds x="350" y="3230" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_280000_di" bpmnElement="Node_280000">
+        <dc:Bounds x="443" y="1090" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_260001_di" bpmnElement="Node_260001">
+        <dc:Bounds x="690" y="1090" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_1_di" bpmnElement="Node_1">
+        <dc:Bounds x="0" y="832" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_20000_di" bpmnElement="Node_20000">
+        <dc:Bounds x="-32" y="940" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_20001_di" bpmnElement="Node_20001">
+        <dc:Bounds x="198" y="940" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_260000_di" bpmnElement="Node_260000">
+        <dc:Bounds x="690" y="940" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_20002_di" bpmnElement="Node_20002">
+        <dc:Bounds x="443" y="940" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Node_58_di" bpmnElement="Node_58">
+        <dc:Bounds x="762" y="2882" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_072cxov_di" bpmnElement="Event_072cxov">
+        <dc:Bounds x="562" y="3252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="633" y="2116" />
+        <di:waypoint x="633" y="2351" />
+        <di:waypoint x="222" y="2351" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="225" y="1266" />
+        <di:waypoint x="68" y="1266" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="140" y="1216" width="80" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="18" y="1446" />
+        <di:waypoint x="18" y="1511" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="205" y="1696" />
+        <di:waypoint x="205" y="1776" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7">
+        <di:waypoint x="205" y="1826" />
+        <di:waypoint x="205" y="1896" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="212" y="1854" width="59" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_9">
+        <di:waypoint x="197" y="1976" />
+        <di:waypoint x="197" y="2081" />
+        <di:waypoint x="60" y="2081" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11_di" bpmnElement="Flow_11">
+        <di:waypoint x="275" y="1266" />
+        <di:waypoint x="443" y="1266" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="311" y="1248" width="55" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12_di" bpmnElement="Flow_12">
+        <di:waypoint x="493" y="1306" />
+        <di:waypoint x="493" y="1366" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13_di" bpmnElement="Flow_13">
+        <di:waypoint x="43" y="1536" />
+        <di:waypoint x="205" y="1536" />
+        <di:waypoint x="205" y="1616" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="165" y="1518" width="79" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_14_di" bpmnElement="Flow_14">
+        <di:waypoint x="690" y="1130" />
+        <di:waypoint x="543" y="1130" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15_di" bpmnElement="Flow_15">
+        <di:waypoint x="250" y="1170" />
+        <di:waypoint x="250" y="1241" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_16_di" bpmnElement="Flow_16">
+        <di:waypoint x="493" y="1446" />
+        <di:waypoint x="493" y="1506" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_17_di" bpmnElement="Flow_17">
+        <di:waypoint x="518" y="1531" />
+        <di:waypoint x="800" y="1531" />
+        <di:waypoint x="800" y="1616" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="612.9999999999999" y="1513" width="74" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_18_di" bpmnElement="Flow_18">
+        <di:waypoint x="493" y="1556" />
+        <di:waypoint x="493" y="1616" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="499" y="1566" width="61" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_19_di" bpmnElement="Flow_19">
+        <di:waypoint x="485" y="1696" />
+        <di:waypoint x="485" y="1776" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_20_di" bpmnElement="Flow_20">
+        <di:waypoint x="510" y="1801" />
+        <di:waypoint x="633" y="1801" />
+        <di:waypoint x="633" y="1896" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="552.9999999999999" y="1783" width="74" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_21_di" bpmnElement="Flow_21">
+        <di:waypoint x="485" y="1826" />
+        <di:waypoint x="485" y="1896" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="489" y="1836" width="61" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_22_di" bpmnElement="Flow_22">
+        <di:waypoint x="230" y="1801" />
+        <di:waypoint x="337" y="1801" />
+        <di:waypoint x="337" y="1896" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="250" y="1783" width="79" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_23_di" bpmnElement="Flow_23">
+        <di:waypoint x="800" y="1696" />
+        <di:waypoint x="800" y="2076" />
+        <di:waypoint x="683" y="2076" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_24_di" bpmnElement="Flow_24">
+        <di:waypoint x="633" y="1976" />
+        <di:waypoint x="633" y="2036" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_25_di" bpmnElement="Flow_25">
+        <di:waypoint x="337" y="1976" />
+        <di:waypoint x="337" y="2076" />
+        <di:waypoint x="427" y="2076" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_26_di" bpmnElement="Flow_26">
+        <di:waypoint x="477" y="1976" />
+        <di:waypoint x="477" y="2036" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_29_di" bpmnElement="Flow_29">
+        <di:waypoint x="18" y="1306" />
+        <di:waypoint x="18" y="1366" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_39_di" bpmnElement="Flow_39">
+        <di:waypoint x="477" y="2116" />
+        <di:waypoint x="477" y="2190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_49_di" bpmnElement="Flow_49">
+        <di:waypoint x="740" y="1020" />
+        <di:waypoint x="740" y="1090" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_50_di" bpmnElement="Flow_50">
+        <di:waypoint x="443" y="1130" />
+        <di:waypoint x="300" y="1130" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="18" y="1561" />
+        <di:waypoint x="18" y="1761" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="-50" y="1628" width="59" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8">
+        <di:waypoint x="10" y="1841" />
+        <di:waypoint x="10" y="2041" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_48_di" bpmnElement="Flow_48">
+        <di:waypoint x="10" y="2121" />
+        <di:waypoint x="10" y="2181" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10_di" bpmnElement="Flow_10">
+        <di:waypoint x="60" y="2221" />
+        <di:waypoint x="147" y="2221" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_32_di" bpmnElement="Flow_32">
+        <di:waypoint x="197" y="2261" />
+        <di:waypoint x="197" y="2326" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_41_di" bpmnElement="Flow_41">
+        <di:waypoint x="222" y="2601" />
+        <di:waypoint x="540" y="2601" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="334" y="2566" width="52" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_35_di" bpmnElement="Flow_35">
+        <di:waypoint x="197" y="2510" />
+        <di:waypoint x="197" y="2576" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_38_di" bpmnElement="Flow_38">
+        <di:waypoint x="20" y="2510" />
+        <di:waypoint x="20" y="2601" />
+        <di:waypoint x="172" y="2601" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_30_di" bpmnElement="Flow_30">
+        <di:waypoint x="197" y="2626" />
+        <di:waypoint x="197" y="2686" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="211" y="2636" width="58" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_31_di" bpmnElement="Flow_31">
+        <di:waypoint x="197" y="2766" />
+        <di:waypoint x="197" y="2846" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_36_di" bpmnElement="Flow_36">
+        <di:waypoint x="197" y="2376" />
+        <di:waypoint x="197" y="2430" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="212" y="2386" width="35" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_37_di" bpmnElement="Flow_37">
+        <di:waypoint x="172" y="2351" />
+        <di:waypoint x="20" y="2351" />
+        <di:waypoint x="20" y="2430" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="27" y="2383" width="52" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_44_di" bpmnElement="Flow_44">
+        <di:waypoint x="-10" y="3046" />
+        <di:waypoint x="-10" y="3120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_45_di" bpmnElement="Flow_45">
+        <di:waypoint x="390" y="3046" />
+        <di:waypoint x="390" y="3150" />
+        <di:waypoint x="40" y="3150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_52_di" bpmnElement="Flow_52">
+        <di:waypoint x="-10" y="3200" />
+        <di:waypoint x="-10" y="3270" />
+        <di:waypoint x="147" y="3270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_42_di" bpmnElement="Flow_42">
+        <di:waypoint x="172" y="2871" />
+        <di:waypoint x="-10" y="2871" />
+        <di:waypoint x="-10" y="2966" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="68" y="2853" width="41" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_43_di" bpmnElement="Flow_43">
+        <di:waypoint x="197" y="2896" />
+        <di:waypoint x="197" y="2966" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="204" y="2925" width="52" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_54_di" bpmnElement="Flow_54">
+        <di:waypoint x="247" y="3006" />
+        <di:waypoint x="340" y="3006" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_27_di" bpmnElement="Flow_27">
+        <di:waypoint x="780" y="2641" />
+        <di:waypoint x="780" y="2710" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_28_di" bpmnElement="Flow_28">
+        <di:waypoint x="730" y="2750" />
+        <di:waypoint x="640" y="2750" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_51_di" bpmnElement="Flow_51">
+        <di:waypoint x="640" y="2601" />
+        <di:waypoint x="730" y="2601" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_33_di" bpmnElement="Flow_33">
+        <di:waypoint x="590" y="2790" />
+        <di:waypoint x="590" y="2860" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_34_di" bpmnElement="Flow_34">
+        <di:waypoint x="640" y="2900" />
+        <di:waypoint x="762" y="2900" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_53_di" bpmnElement="Flow_53">
+        <di:waypoint x="247" y="3270" />
+        <di:waypoint x="350" y="3270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0_di" bpmnElement="Flow_0">
+        <di:waypoint x="18" y="868" />
+        <di:waypoint x="18" y="940" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_46_di" bpmnElement="Flow_46">
+        <di:waypoint x="68" y="980" />
+        <di:waypoint x="198" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_47_di" bpmnElement="Flow_47">
+        <di:waypoint x="298" y="980" />
+        <di:waypoint x="443" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="543" y="980" />
+        <di:waypoint x="690" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15ghyy6_di" bpmnElement="Flow_15ghyy6">
+        <di:waypoint x="450" y="3270" />
+        <di:waypoint x="562" y="3270" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

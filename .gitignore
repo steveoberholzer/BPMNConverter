@@ -1,0 +1,19 @@
+# .NET build output
+bin/
+obj/
+
+# User-specific VS files
+*.user
+*.suo
+.vs/
+
+# NuGet packages (restored on build)
+packages/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+*.swp
+*~
