@@ -118,6 +118,7 @@ public partial class MainWindow : Window
             BtnExportPdf.IsEnabled   = true;
             BtnFit.IsEnabled         = true;
             BtnAutoLayout.IsEnabled  = true;
+            CboLayout.IsEnabled      = true;
 
             FitDiagram();
         }
@@ -483,13 +484,15 @@ public partial class MainWindow : Window
     {
         if (_currentModel == null) return;
 
+        var layoutType = (LayoutType)CboLayout.SelectedIndex;
+
         Mouse.OverrideCursor = Cursors.Wait;
         try
         {
-            LayoutEngine.ApplyLayeredLayout(_currentModel);
+            LayoutEngine.ApplyLayout(_currentModel, layoutType);
             RenderModel();
             FitDiagram();
-            StatusLeft.Text = "Auto layout applied.";
+            StatusLeft.Text = $"Layout applied: {((ComboBoxItem)CboLayout.SelectedItem).Content}";
         }
         finally
         {

@@ -167,7 +167,15 @@
 
           <Separator Margin="6,0"/>
 
-          <Button x:Name="BtnAutoLayout"  Content="⟳ Auto Layout" Style="{StaticResource ToolBtnStyle}" IsEnabled="False" Click="BtnAutoLayout_Click" ToolTip="Apply left-to-right layered layout"/>
+          <ComboBox x:Name="CboLayout" IsEnabled="False" VerticalAlignment="Center"
+                    MinWidth="160" Margin="3,0" FontSize="11" SelectedIndex="0">
+            <ComboBoxItem Content="→ Left to Right"/>
+            <ComboBoxItem Content="↓ Top to Bottom"/>
+            <ComboBoxItem Content="⟳ Snake (Horizontal)"/>
+            <ComboBoxItem Content="⟳ Snake (Vertical)"/>
+          </ComboBox>
+          <Button x:Name="BtnAutoLayout" Content="Apply Layout" Style="{StaticResource ToolBtnStyle}"
+                  IsEnabled="False" Click="BtnAutoLayout_Click" ToolTip="Apply selected layout algorithm"/>
 
         </DockPanel>
       </Border>
