@@ -45,6 +45,14 @@
       <Setter Property="BorderBrush" Value="#BDBDBD"/>
       <Setter Property="Cursor" Value="Hand"/>
     </Style>
+
+    <!-- Compact variant for the alignment buttons -->
+    <Style x:Key="AlignBtnStyle" TargetType="Button" BasedOn="{StaticResource ToolBtnStyle}">
+      <Setter Property="Padding" Value="7,4"/>
+      <Setter Property="Margin" Value="2,0"/>
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="MinWidth" Value="0"/>
+    </Style>
   </Window.Resources>
 
   <Grid>
@@ -61,7 +69,6 @@
         <RowDefinition Height="*"/>
       </Grid.RowDefinitions>
 
-      <!-- App title -->
       <Border Grid.Row="0" Background="#0D1B2A" Padding="14,14,14,10">
         <StackPanel>
           <TextBlock Text="BPMN Viewer" FontSize="16" FontWeight="Bold"
@@ -71,12 +78,10 @@
         </StackPanel>
       </Border>
 
-      <!-- Section header -->
       <TextBlock Grid.Row="1" Text="WORKFLOW FILES"
                  Foreground="#546E7A" FontSize="10" FontWeight="SemiBold"
                  Margin="14,12,0,4"/>
 
-      <!-- File list -->
       <ListBox x:Name="FileListBox" Grid.Row="2"
                Background="Transparent" BorderThickness="0"
                ItemContainerStyle="{StaticResource NavItemStyle}"
@@ -93,16 +98,16 @@
     <!-- ── Main content ────────────────────────────────────────────────────── -->
     <Grid Grid.Column="1">
       <Grid.RowDefinitions>
-        <RowDefinition Height="Auto"/>
-        <RowDefinition Height="*"/>
-        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>   <!-- export + zoom toolbar -->
+        <RowDefinition Height="Auto"/>   <!-- arrange toolbar -->
+        <RowDefinition Height="*"/>      <!-- diagram canvas -->
+        <RowDefinition Height="Auto"/>   <!-- status bar -->
       </Grid.RowDefinitions>
 
-      <!-- Toolbar -->
+      <!-- ── Toolbar row 1: Export + Zoom ──────────────────────────────────── -->
       <Border Grid.Row="0" Background="White"
               BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
         <DockPanel Margin="8,5">
-          <!-- Export buttons -->
           <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
             <TextBlock Text="Export:" VerticalAlignment="Center"
                        Foreground="#757575" Margin="0,0,6,0" FontSize="12"/>
@@ -114,7 +119,6 @@
                     Click="BtnExportPdf_Click" IsEnabled="False"/>
           </StackPanel>
 
-          <!-- Zoom controls -->
           <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
             <Button Content="Fit" Style="{StaticResource ToolBtnStyle}"
                     Click="BtnFit_Click" x:Name="BtnFit" IsEnabled="False"/>
@@ -130,8 +134,46 @@
         </DockPanel>
       </Border>
 
-      <!-- Diagram canvas -->
-      <Border Grid.Row="1" Background="#EAECEF">
+      <!-- ── Toolbar row 2: Arrange ─────────────────────────────────────────── -->
+      <Border Grid.Row="1" Background="#FAFAFA"
+              BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+        <DockPanel Margin="8,4">
+
+          <!-- Selection info (right-docked so it doesn't push buttons) -->
+          <TextBlock x:Name="LblSelection" DockPanel.Dock="Right"
+                     VerticalAlignment="Center" FontSize="11"
+                     Foreground="#9E9E9E" Margin="8,0,4,0"
+                     Text="No selection"/>
+
+          <!-- Align group label -->
+          <TextBlock Text="Align:" VerticalAlignment="Center"
+                     Foreground="#757575" FontSize="11" Margin="0,0,4,0"/>
+
+          <!-- Align buttons -->
+          <Button x:Name="BtnAlignLeft"   Content="⊣ Left"    Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnAlignLeft_Click"   ToolTip="Align left edges"/>
+          <Button x:Name="BtnAlignCtrH"   Content="↔ Center"  Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnAlignCtrH_Click"   ToolTip="Center horizontally"/>
+          <Button x:Name="BtnAlignRight"  Content="⊢ Right"   Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnAlignRight_Click"  ToolTip="Align right edges"/>
+
+          <Separator Margin="4,0"/>
+
+          <Button x:Name="BtnAlignTop"    Content="⊤ Top"     Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnAlignTop_Click"    ToolTip="Align top edges"/>
+          <Button x:Name="BtnAlignMidV"   Content="↕ Middle"  Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnAlignMidV_Click"   ToolTip="Center vertically"/>
+          <Button x:Name="BtnAlignBot"    Content="⊥ Bottom"  Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnAlignBot_Click"    ToolTip="Align bottom edges"/>
+
+          <Separator Margin="4,0"/>
+
+          <Button x:Name="BtnDistribH"    Content="↔ Distrib" Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnDistribH_Click"    ToolTip="Distribute horizontally"/>
+          <Button x:Name="BtnDistribV"    Content="↕ Distrib" Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnDistribV_Click"    ToolTip="Distribute vertically"/>
+
+          <Separator Margin="6,0"/>
+
+          <Button x:Name="BtnAutoLayout"  Content="⟳ Auto Layout" Style="{StaticResource ToolBtnStyle}" IsEnabled="False" Click="BtnAutoLayout_Click" ToolTip="Apply left-to-right layered layout"/>
+
+        </DockPanel>
+      </Border>
+
+      <!-- ── Diagram canvas ─────────────────────────────────────────────────── -->
+      <Border Grid.Row="2" Background="#EAECEF">
         <ScrollViewer x:Name="DiagramScrollViewer"
                       HorizontalScrollBarVisibility="Auto"
                       VerticalScrollBarVisibility="Auto"
@@ -145,8 +187,8 @@
         </ScrollViewer>
       </Border>
 
-      <!-- Status bar -->
-      <Border Grid.Row="2" Background="#FAFAFA"
+      <!-- ── Status bar ─────────────────────────────────────────────────────── -->
+      <Border Grid.Row="3" Background="#FAFAFA"
               BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Padding="14,4">
         <DockPanel>
           <TextBlock x:Name="StatusRight" DockPanel.Dock="Right"
