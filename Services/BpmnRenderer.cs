@@ -14,7 +14,11 @@ public class BpmnRenderer
     public double OffsetX { get; private set; }
     public double OffsetY { get; private set; }
 
-    private readonly List<UIElement> _flowElements = new();
+    // When true, crossing flow lines get a hop-over bridge arc
+    public bool ShowBridges { get; set; }
+
+    private readonly List<UIElement>         _flowElements = new();
+    private readonly List<(Point A, Point B)> _flowSegments = new();
 
     // ── Public API ─────────────────────────────────────────────────────────────
 
@@ -107,6 +111,7 @@ public class BpmnRenderer
 
     private void DrawFlows(BpmnModel model, Canvas canvas)
     {
+        _flowSegments.Clear();
         var brush = FlowBrush();
 
         foreach (var flow in model.Flows)
@@ -122,6 +127,8 @@ public class BpmnRenderer
             if (!string.IsNullOrWhiteSpace(flow.Name))
                 RenderFlowLabel(canvas, pts[pts.Length / 2], flow.Name);
         }
+
+        if (ShowBridges) DrawBridges(canvas);
     }
 
     // ── Flows (redrawn after node moves, using live container positions) ───────
@@ -129,6 +136,7 @@ public class BpmnRenderer
     private void DrawFlowsFromContainers(BpmnModel model, Canvas canvas,
         IReadOnlyDictionary<string, Canvas> containers)
     {
+        _flowSegments.Clear();
         var brush = FlowBrush();
 
         foreach (var flow in model.Flows)
@@ -155,6 +163,8 @@ public class BpmnRenderer
             if (!string.IsNullOrWhiteSpace(flow.Name))
                 RenderFlowLabel(canvas, new Point((from.X + to.X) / 2, (from.Y + to.Y) / 2), flow.Name);
         }
+
+        if (ShowBridges) DrawBridges(canvas);
     }
 
     private void RenderFlowLines(Canvas canvas, Point[] pts, SolidColorBrush brush)
@@ -167,6 +177,9 @@ public class BpmnRenderer
                 X2 = pts[i + 1].X, Y2 = pts[i + 1].Y,
                 Stroke = brush, StrokeThickness = 1.5
             });
+
+            if (ShowBridges)
+                _flowSegments.Add((pts[i], pts[i + 1]));
         }
         DrawArrowhead(canvas, pts[^2], pts[^1], brush);
     }
@@ -516,4 +529,91 @@ public class BpmnRenderer
 
     private static SolidColorBrush FlowBrush() =>
         new(Color.FromRgb(80, 80, 80));
+
+    // ── Bridge rendering ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// For every pair of flow segments that cross, draws a white blanking ellipse
+    /// at the intersection and then an arc on the second ("over") segment so it
+    /// visually hops over the first ("under") segment.
+    /// </summary>
+    private void DrawBridges(Canvas canvas)
+    {
+        const double r = 7.0;  // bridge hop radius (px)
+        var flowColor = FlowBrush();
+
+        for (int i = 0; i < _flowSegments.Count; i++)
+        for (int j = i + 1; j < _flowSegments.Count; j++)
+        {
+            if (!LineIntersect(_flowSegments[i].A, _flowSegments[i].B,
+                               _flowSegments[j].A, _flowSegments[j].B,
+                               out var pt)) continue;
+
+            // White ellipse erases both lines at the crossing
+            var blanker = new Ellipse
+            {
+                Width  = r * 2 + 2,
+                Height = r * 2 + 2,
+                Fill   = Brushes.White,
+                Stroke = Brushes.White
+            };
+            _flowElements.Add(blanker);
+            Canvas.SetLeft(blanker, pt.X - r - 1);
+            Canvas.SetTop(blanker,  pt.Y - r - 1);
+            Canvas.SetZIndex(blanker, 3);
+            canvas.Children.Add(blanker);
+
+            // Arc on segment j restores its visual as a hop
+            var dirI  = UnitDir(_flowSegments[i].A, _flowSegments[i].B);
+            var dirJ  = UnitDir(_flowSegments[j].A, _flowSegments[j].B);
+            double cross = dirI.X * dirJ.Y - dirI.Y * dirJ.X;
+            var sweep    = cross > 0 ? SweepDirection.Counterclockwise
+                                     : SweepDirection.Clockwise;
+
+            var arcStart = new Point(pt.X - dirJ.X * r, pt.Y - dirJ.Y * r);
+            var arcEnd   = new Point(pt.X + dirJ.X * r, pt.Y + dirJ.Y * r);
+
+            var pf = new PathFigure { StartPoint = arcStart, IsFilled = false };
+            pf.Segments.Add(new ArcSegment
+            {
+                Point          = arcEnd,
+                Size           = new Size(r, r),
+                SweepDirection = sweep,
+                IsLargeArc     = false
+            });
+            var pg = new PathGeometry();
+            pg.Figures.Add(pf);
+
+            var arc = new Path { Data = pg, Stroke = flowColor, StrokeThickness = 1.5 };
+            _flowElements.Add(arc);
+            Canvas.SetZIndex(arc, 4);
+            canvas.Children.Add(arc);
+        }
+    }
+
+    // Returns true and the interior intersection point of two finite line segments.
+    // Endpoints are excluded (threshold 0.05 of segment length each end).
+    private static bool LineIntersect(Point a1, Point a2, Point b1, Point b2, out Point pt)
+    {
+        pt = default;
+        double dax = a2.X - a1.X, day = a2.Y - a1.Y;
+        double dbx = b2.X - b1.X, dby = b2.Y - b1.Y;
+        double denom = dax * dby - day * dbx;
+        if (Math.Abs(denom) < 0.001) return false;  // parallel or collinear
+
+        double t = ((b1.X - a1.X) * dby - (b1.Y - a1.Y) * dbx) / denom;
+        double u = ((b1.X - a1.X) * day - (b1.Y - a1.Y) * dax) / denom;
+
+        if (t <= 0.05 || t >= 0.95 || u <= 0.05 || u >= 0.95) return false;
+
+        pt = new Point(a1.X + t * dax, a1.Y + t * day);
+        return true;
+    }
+
+    private static Point UnitDir(Point from, Point to)
+    {
+        double dx = to.X - from.X, dy = to.Y - from.Y;
+        double len = Math.Sqrt(dx * dx + dy * dy);
+        return len < 0.001 ? new Point(1, 0) : new Point(dx / len, dy / len);
+    }
 }

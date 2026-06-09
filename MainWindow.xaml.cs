@@ -13,16 +13,21 @@ namespace DiagramApp;
 
 public partial class MainWindow : Window
 {
-    private readonly BpmnParser     _parser   = new();
-    private readonly BpmnRenderer   _renderer = new();
+    private readonly BpmnParser      _parser   = new();
+    private readonly BpmnRenderer    _renderer = new();
     private readonly DiagramExporter _exporter = new();
+    private readonly BpmnWriter      _writer   = new();
 
     private BpmnModel? _currentModel;
     private string?    _currentFile;
     private double     _zoom = 1.0;
     private (double W, double H) _diagramSize;
 
+    private List<FileItem> _recentFiles = new();
+
     private const string SamplesFolder = "Samples";
+
+    private record FileItem(string Name, string FullPath);
 
     // ── Edit state ────────────────────────────────────────────────────────────
 
@@ -52,45 +57,58 @@ public partial class MainWindow : Window
 
     private void LoadFileList()
     {
-        string samplesPath = SysPath.Combine(AppDomain.CurrentDomain.BaseDirectory, SamplesFolder);
-        if (!Directory.Exists(samplesPath))
-            samplesPath = SysPath.Combine(
-                Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory)?.FullName
-                ?? AppDomain.CurrentDomain.BaseDirectory,
-                SamplesFolder);
-
+        string samplesPath = ResolveSamplesPath();
         if (!Directory.Exists(samplesPath))
         {
-            StatusLeft.Text = $"Samples folder not found at: {samplesPath}";
+            StatusLeft.Text = $"Samples folder not found — use Open File to browse.";
             return;
         }
 
-        var files = Directory.GetFiles(samplesPath, "*.bpmn")
-                             .OrderBy(f => f)
-                             .Select(SysPath.GetFileName)
-                             .Where(f => f != null)
-                             .Cast<string>()
-                             .ToList();
+        _recentFiles = Directory.GetFiles(samplesPath, "*.bpmn")
+                                .OrderBy(f => f)
+                                .Select(p => new FileItem(SysPath.GetFileName(p), p))
+                                .ToList();
 
-        FileListBox.ItemsSource = files;
-        StatusLeft.Text = $"Found {files.Count} BPMN file(s) in Samples folder.";
+        FileListBox.ItemsSource = _recentFiles;
+        StatusLeft.Text = $"Found {_recentFiles.Count} BPMN file(s). Use Open File to browse for more.";
     }
 
     private void FileListBox_SelectionChanged(object sender,
         System.Windows.Controls.SelectionChangedEventArgs e)
     {
-        if (FileListBox.SelectedItem is not string fileName) return;
+        if (FileListBox.SelectedItem is not FileItem item) return;
 
-        string samplesPath = ResolveSamplesPath();
-        string fullPath    = SysPath.Combine(samplesPath, fileName);
-
-        if (!File.Exists(fullPath))
+        if (!File.Exists(item.FullPath))
         {
-            StatusLeft.Text = $"File not found: {fullPath}";
+            StatusLeft.Text = $"File not found: {item.FullPath}";
             return;
         }
 
-        LoadBpmnFile(fullPath);
+        LoadBpmnFile(item.FullPath);
+    }
+
+    private void BtnOpenFile_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new OpenFileDialog
+        {
+            Title  = "Open BPMN File",
+            Filter = "BPMN Files|*.bpmn|All Files|*.*"
+        };
+        if (dlg.ShowDialog() != true) return;
+
+        // Prepend to recent list, deduplicate by full path, keep most recent 30
+        var newItem = new FileItem(SysPath.GetFileName(dlg.FileName), dlg.FileName);
+        _recentFiles = _recentFiles
+            .Where(f => !string.Equals(f.FullPath, dlg.FileName, StringComparison.OrdinalIgnoreCase))
+            .Prepend(newItem)
+            .Take(30)
+            .ToList();
+
+        FileListBox.ItemsSource = null;
+        FileListBox.ItemsSource = _recentFiles;
+        FileListBox.SelectedItem = _recentFiles[0];
+
+        LoadBpmnFile(dlg.FileName);
     }
 
     // ── BPMN loading & rendering ──────────────────────────────────────────────
@@ -116,9 +134,11 @@ public partial class MainWindow : Window
 
             BtnExportVsdx.IsEnabled  = true;
             BtnExportPdf.IsEnabled   = true;
+            BtnExportBpmn.IsEnabled  = true;
             BtnFit.IsEnabled         = true;
             BtnAutoLayout.IsEnabled  = true;
             CboLayout.IsEnabled      = true;
+            ChkBridges.IsEnabled     = true;
 
             FitDiagram();
         }
@@ -158,6 +178,47 @@ public partial class MainWindow : Window
     private void BtnExportPdf_Click(object sender, RoutedEventArgs e) =>
         RunExport("PDF Files|*.pdf", ".pdf",
                   path => _exporter.ExportToPdf(_currentModel!, path));
+
+    private void BtnExportBpmn_Click(object sender, RoutedEventArgs e)
+    {
+        if (_currentModel == null || _currentFile == null) return;
+
+        var dlg = new SaveFileDialog
+        {
+            Title      = "Export Updated BPMN Layout",
+            Filter     = "BPMN Files|*.bpmn|All Files|*.*",
+            FileName   = SysPath.GetFileNameWithoutExtension(_currentFile) + "_updated.bpmn",
+            DefaultExt = ".bpmn"
+        };
+        if (dlg.ShowDialog() != true) return;
+
+        Mouse.OverrideCursor = Cursors.Wait;
+        try
+        {
+            // Make sure in-memory model reflects latest drag/align positions
+            SyncContainerPositionsToModel();
+            _writer.Save(_currentModel, _currentFile, dlg.FileName);
+            StatusLeft.Text = $"BPMN exported → {dlg.FileName}";
+            MessageBox.Show($"Saved to:\n{dlg.FileName}", "BPMN Export Complete",
+                            MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"BPMN export failed:\n{ex.Message}", "Export Error",
+                            MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            Mouse.OverrideCursor = null;
+        }
+    }
+
+    private void ChkBridges_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_currentModel == null) return;
+        _renderer.ShowBridges = ChkBridges.IsChecked == true;
+        RenderModel();
+    }
 
     private void RunExport(string filter, string ext, Action<string> export)
     {

@@ -66,6 +66,7 @@
       <Grid.RowDefinitions>
         <RowDefinition Height="Auto"/>
         <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
         <RowDefinition Height="*"/>
       </Grid.RowDefinitions>
 
@@ -78,18 +79,28 @@
         </StackPanel>
       </Border>
 
-      <TextBlock Grid.Row="1" Text="WORKFLOW FILES"
+      <!-- Open File button -->
+      <Border Grid.Row="1" Background="#0D1B2A" Padding="10,6,10,8"
+              BorderBrush="#1A2B3C" BorderThickness="0,0,0,1">
+        <Button x:Name="BtnOpenFile" Content="📂  Open File…"
+                Click="BtnOpenFile_Click"
+                FontSize="12" Padding="8,5" Cursor="Hand"
+                Background="#1E3D5C" Foreground="#CFD8DC"
+                BorderBrush="#2A5078" HorizontalAlignment="Stretch"/>
+      </Border>
+
+      <TextBlock Grid.Row="2" Text="RECENT FILES"
                  Foreground="#546E7A" FontSize="10" FontWeight="SemiBold"
                  Margin="14,12,0,4"/>
 
-      <ListBox x:Name="FileListBox" Grid.Row="2"
+      <ListBox x:Name="FileListBox" Grid.Row="3"
                Background="Transparent" BorderThickness="0"
                ItemContainerStyle="{StaticResource NavItemStyle}"
                SelectionChanged="FileListBox_SelectionChanged"
                ScrollViewer.HorizontalScrollBarVisibility="Disabled">
         <ListBox.ItemTemplate>
           <DataTemplate>
-            <TextBlock Text="{Binding}" TextWrapping="Wrap" FontSize="11.5"/>
+            <TextBlock Text="{Binding Name}" TextWrapping="Wrap" FontSize="11.5"/>
           </DataTemplate>
         </ListBox.ItemTemplate>
       </ListBox>
@@ -117,6 +128,10 @@
             <Button x:Name="BtnExportPdf" Content="📄 PDF"
                     Style="{StaticResource ToolBtnStyle}"
                     Click="BtnExportPdf_Click" IsEnabled="False"/>
+            <Button x:Name="BtnExportBpmn" Content="🔄 BPMN (.bpmn)"
+                    Style="{StaticResource ToolBtnStyle}"
+                    Click="BtnExportBpmn_Click" IsEnabled="False"
+                    ToolTip="Export updated layout back to a .bpmn file"/>
           </StackPanel>
 
           <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
@@ -177,6 +192,14 @@
           <Button x:Name="BtnAutoLayout" Content="Apply Layout" Style="{StaticResource ToolBtnStyle}"
                   IsEnabled="False" Click="BtnAutoLayout_Click" ToolTip="Apply selected layout algorithm"/>
 
+          <Separator Margin="6,0"/>
+
+          <CheckBox x:Name="ChkBridges" Content="⌇ Bridges"
+                    VerticalAlignment="Center" Margin="4,0,8,0" FontSize="11"
+                    IsEnabled="False"
+                    Checked="ChkBridges_Toggled" Unchecked="ChkBridges_Toggled"
+                    ToolTip="Draw hop-over arcs where flow lines cross"/>
+
         </DockPanel>
       </Border>
 
@@ -203,7 +226,7 @@
                      FontSize="11" Foreground="#9E9E9E" VerticalAlignment="Center"/>
           <TextBlock x:Name="StatusLeft"
                      FontSize="11" Foreground="#616161" VerticalAlignment="Center"
-                     Text="Select a BPMN file from the list to view its workflow diagram."/>
+                     Text="Open a BPMN file using the sidebar button or select one from the recent list."/>
         </DockPanel>
       </Border>
     </Grid>
