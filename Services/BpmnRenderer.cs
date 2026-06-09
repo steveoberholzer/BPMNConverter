@@ -21,16 +21,16 @@ public class BpmnRenderer
     private readonly List<UIElement>           _flowElements   = new();
     private readonly List<(Point A, Point B)>  _flowSegments   = new();
     // Per-flow lookups so MainWindow can highlight selected flows
-    private readonly Dictionary<string, Polyline>  _flowVisuals    = new();
+    private readonly Dictionary<string, Shape>     _flowVisuals    = new();
     private readonly Dictionary<string, UIElement> _flowHitTargets = new();
 
     public IReadOnlyDictionary<string, UIElement> FlowHitTargets => _flowHitTargets;
 
     public void SetFlowSelected(string flowId, bool selected)
     {
-        if (!_flowVisuals.TryGetValue(flowId, out var poly)) return;
-        poly.Stroke          = selected ? SelectedFlowBrush() : FlowBrush();
-        poly.StrokeThickness = selected ? 2.5 : 1.5;
+        if (!_flowVisuals.TryGetValue(flowId, out var shape)) return;
+        shape.Stroke          = selected ? SelectedFlowBrush() : FlowBrush();
+        shape.StrokeThickness = selected ? 2.5 : 1.5;
     }
 
     private static SolidColorBrush SelectedFlowBrush() =>
@@ -187,18 +187,17 @@ public class BpmnRenderer
 
     private void RenderFlowPolyline(Canvas canvas, string flowId, Point[] pts, SolidColorBrush brush)
     {
-        // Visible polyline (non-hittable — all clicks go to the transparent overlay)
-        var poly = new Polyline
+        // Visible path with rounded bends
+        var path = new Path
         {
-            Points           = new PointCollection(pts),
+            Data             = BuildRoundedPath(pts),
             Stroke           = brush,
             StrokeThickness  = 1.5,
             Fill             = Brushes.Transparent,
-            StrokeLineJoin   = PenLineJoin.Miter,
             IsHitTestVisible = false
         };
-        _flowVisuals[flowId] = poly;
-        AddFlowElement(canvas, poly);
+        _flowVisuals[flowId] = path;
+        AddFlowElement(canvas, path);
 
         // Wide transparent overlay — easy to click even on thin lines
         var overlay = new Polyline
@@ -219,6 +218,52 @@ public class BpmnRenderer
         if (ShowBridges)
             for (int i = 0; i < pts.Length - 1; i++)
                 _flowSegments.Add((pts[i], pts[i + 1]));
+    }
+
+    // Builds a PathGeometry that draws straight segments with small rounded bends.
+    private static Geometry BuildRoundedPath(Point[] pts, double r = 6.0)
+    {
+        if (pts.Length < 2) return Geometry.Empty;
+
+        var figure = new PathFigure { StartPoint = pts[0], IsFilled = false };
+
+        for (int i = 1; i < pts.Length; i++)
+        {
+            if (i < pts.Length - 1)
+            {
+                double dist1 = SegLen(pts[i - 1], pts[i]);
+                double dist2 = SegLen(pts[i],     pts[i + 1]);
+                double cr    = Math.Min(r, Math.Min(dist1, dist2) / 2.0);
+
+                if (cr < 0.5)
+                {
+                    figure.Segments.Add(new LineSegment(pts[i], true));
+                }
+                else
+                {
+                    var dIn  = UnitDir(pts[i - 1], pts[i]);
+                    var dOut = UnitDir(pts[i],     pts[i + 1]);
+                    var before = new Point(pts[i].X - dIn.X  * cr, pts[i].Y - dIn.Y  * cr);
+                    var after  = new Point(pts[i].X + dOut.X * cr, pts[i].Y + dOut.Y * cr);
+                    figure.Segments.Add(new LineSegment(before, true));
+                    figure.Segments.Add(new QuadraticBezierSegment(pts[i], after, true));
+                }
+            }
+            else
+            {
+                figure.Segments.Add(new LineSegment(pts[i], true));
+            }
+        }
+
+        var geom = new PathGeometry();
+        geom.Figures.Add(figure);
+        return geom;
+    }
+
+    private static double SegLen(Point a, Point b)
+    {
+        double dx = b.X - a.X, dy = b.Y - a.Y;
+        return Math.Sqrt(dx * dx + dy * dy);
     }
 
     // Computes a 4-point orthogonal elbow path in canvas coordinates.

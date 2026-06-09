@@ -1,43 +1,13 @@
 <Window x:Class="DiagramApp.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="BPMN Diagram Viewer  —  powered by Aspose.Diagram"
+        Title="BPMN Studio"
         Width="1400" Height="860"
         WindowStartupLocation="CenterScreen"
         Background="#F0F2F5"
         PreviewKeyDown="Window_PreviewKeyDown">
 
   <Window.Resources>
-    <Style x:Key="NavItemStyle" TargetType="ListBoxItem">
-      <Setter Property="Padding" Value="10,7"/>
-      <Setter Property="Foreground" Value="#CFD8DC"/>
-      <Setter Property="FontSize" Value="12"/>
-      <Setter Property="BorderThickness" Value="0"/>
-      <Setter Property="Background" Value="Transparent"/>
-      <Setter Property="Cursor" Value="Hand"/>
-      <Setter Property="Template">
-        <Setter.Value>
-          <ControlTemplate TargetType="ListBoxItem">
-            <Border x:Name="Bd" Background="{TemplateBinding Background}"
-                    Padding="{TemplateBinding Padding}"
-                    BorderThickness="3,0,0,0" BorderBrush="Transparent">
-              <ContentPresenter />
-            </Border>
-            <ControlTemplate.Triggers>
-              <Trigger Property="IsSelected" Value="True">
-                <Setter TargetName="Bd" Property="Background" Value="#2A3F55"/>
-                <Setter TargetName="Bd" Property="BorderBrush" Value="#4FC3F7"/>
-                <Setter Property="Foreground" Value="White"/>
-              </Trigger>
-              <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="Bd" Property="Background" Value="#1E3348"/>
-              </Trigger>
-            </ControlTemplate.Triggers>
-          </ControlTemplate>
-        </Setter.Value>
-      </Setter>
-    </Style>
-
     <Style x:Key="ToolBtnStyle" TargetType="Button">
       <Setter Property="Padding" Value="12,5"/>
       <Setter Property="Margin" Value="3,0"/>
@@ -47,224 +17,192 @@
       <Setter Property="Cursor" Value="Hand"/>
     </Style>
 
-    <!-- Compact variant for the alignment buttons -->
     <Style x:Key="AlignBtnStyle" TargetType="Button" BasedOn="{StaticResource ToolBtnStyle}">
       <Setter Property="Padding" Value="7,4"/>
       <Setter Property="Margin" Value="2,0"/>
       <Setter Property="FontSize" Value="11"/>
       <Setter Property="MinWidth" Value="0"/>
     </Style>
+
+    <Style x:Key="PropLabelStyle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="9"/>
+      <Setter Property="Foreground" Value="#9E9E9E"/>
+      <Setter Property="Margin" Value="0,7,0,1"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="PropInputStyle" TargetType="TextBox">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Padding" Value="4,3"/>
+      <Setter Property="BorderBrush" Value="#BDBDBD"/>
+      <Setter Property="BorderThickness" Value="1"/>
+    </Style>
   </Window.Resources>
 
   <Grid>
-    <Grid.ColumnDefinitions>
-      <ColumnDefinition Width="230"/>
-      <ColumnDefinition Width="*"/>
-    </Grid.ColumnDefinitions>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>  <!-- 0: menu bar -->
+      <RowDefinition Height="Auto"/>  <!-- 1: export + zoom toolbar -->
+      <RowDefinition Height="Auto"/>  <!-- 2: arrange toolbar -->
+      <RowDefinition Height="Auto"/>  <!-- 3: tools + shape palette -->
+      <RowDefinition Height="*"/>     <!-- 4: canvas + properties panel -->
+      <RowDefinition Height="Auto"/>  <!-- 5: status bar -->
+    </Grid.RowDefinitions>
 
-    <!-- ── Sidebar ─────────────────────────────────────────────────────────── -->
-    <Grid Grid.Column="0" Background="#1A2B3C">
-      <Grid.RowDefinitions>
-        <RowDefinition Height="Auto"/>
-        <RowDefinition Height="Auto"/>
-        <RowDefinition Height="Auto"/>
-        <RowDefinition Height="*"/>
-      </Grid.RowDefinitions>
+    <!-- ── Menu bar ──────────────────────────────────────────────────────────── -->
+    <Menu Grid.Row="0" Background="White" FontSize="12"
+          BorderBrush="#E0E0E0" BorderThickness="0,0,0,1" Padding="4,2">
+      <MenuItem Header="_File">
+        <MenuItem Header="_New"               Click="BtnNew_Click"          InputGestureText="Ctrl+N"/>
+        <Separator/>
+        <MenuItem Header="_Open File…"        Click="BtnOpenFile_Click"     InputGestureText="Ctrl+O"/>
+        <MenuItem x:Name="MenuRecentFiles"    Header="Recent _Files"        IsEnabled="False"/>
+        <Separator/>
+        <MenuItem x:Name="MenuSaveBpmn"       Header="_Save As BPMN…"       Click="BtnExportBpmn_Click"
+                  InputGestureText="Ctrl+S"   IsEnabled="False"/>
+        <Separator/>
+        <MenuItem Header="E_xport">
+          <MenuItem x:Name="MenuExportVsdx"   Header="_Visio (.vsdx)…"      Click="BtnExportVsdx_Click" IsEnabled="False"/>
+          <MenuItem x:Name="MenuExportPdf"    Header="_PDF…"                Click="BtnExportPdf_Click"  IsEnabled="False"/>
+        </MenuItem>
+        <Separator/>
+        <MenuItem Header="E_xit" Click="MenuExit_Click"/>
+      </MenuItem>
+    </Menu>
 
-      <Border Grid.Row="0" Background="#0D1B2A" Padding="14,14,14,10">
-        <StackPanel>
-          <TextBlock Text="BPMN Viewer" FontSize="16" FontWeight="Bold"
-                     Foreground="#4FC3F7"/>
-          <TextBlock Text="via Aspose.Diagram" FontSize="10"
-                     Foreground="#546E7A" Margin="0,1,0,0"/>
+    <!-- ── Toolbar: Export + Zoom ────────────────────────────────────────────── -->
+    <Border Grid.Row="1" Background="White"
+            BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+      <DockPanel Margin="8,5">
+        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+          <Button x:Name="BtnNew" Content="🗋 New"
+                  Style="{StaticResource ToolBtnStyle}"
+                  Click="BtnNew_Click" ToolTip="New blank diagram (Ctrl+N)"/>
+          <Separator Margin="4,0"/>
+          <TextBlock Text="Export:" VerticalAlignment="Center"
+                     Foreground="#757575" Margin="0,0,6,0" FontSize="12"/>
+          <Button x:Name="BtnExportVsdx" Content="💾 Visio (.vsdx)"
+                  Style="{StaticResource ToolBtnStyle}"
+                  Click="BtnExportVsdx_Click" IsEnabled="False"/>
+          <Button x:Name="BtnExportPdf"  Content="📄 PDF"
+                  Style="{StaticResource ToolBtnStyle}"
+                  Click="BtnExportPdf_Click"  IsEnabled="False"/>
+          <Button x:Name="BtnExportBpmn" Content="🔄 BPMN (.bpmn)"
+                  Style="{StaticResource ToolBtnStyle}"
+                  Click="BtnExportBpmn_Click" IsEnabled="False"
+                  ToolTip="Save updated layout back to .bpmn (Ctrl+S)"/>
         </StackPanel>
-      </Border>
 
-      <!-- Open File button -->
-      <Border Grid.Row="1" Background="#0D1B2A" Padding="10,6,10,8"
-              BorderBrush="#1A2B3C" BorderThickness="0,0,0,1">
-        <Button x:Name="BtnOpenFile" Content="📂  Open File…"
-                Click="BtnOpenFile_Click"
-                FontSize="12" Padding="8,5" Cursor="Hand"
-                Background="#1E3D5C" Foreground="#CFD8DC"
-                BorderBrush="#2A5078" HorizontalAlignment="Stretch"/>
-      </Border>
+        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+          <Button Content="Fit" Style="{StaticResource ToolBtnStyle}"
+                  Click="BtnFit_Click" x:Name="BtnFit" IsEnabled="False"/>
+          <Button Content="−" Style="{StaticResource ToolBtnStyle}" Width="30"
+                  Click="BtnZoomOut_Click"/>
+          <TextBlock x:Name="ZoomLabel" Text="100%" VerticalAlignment="Center"
+                     Margin="6,0" FontSize="12" MinWidth="40" TextAlignment="Center"/>
+          <Button Content="+" Style="{StaticResource ToolBtnStyle}" Width="30"
+                  Click="BtnZoomIn_Click"/>
+        </StackPanel>
+      </DockPanel>
+    </Border>
 
-      <TextBlock Grid.Row="2" Text="RECENT FILES"
-                 Foreground="#546E7A" FontSize="10" FontWeight="SemiBold"
-                 Margin="14,12,0,4"/>
+    <!-- ── Toolbar: Arrange ──────────────────────────────────────────────────── -->
+    <Border Grid.Row="2" Background="#FAFAFA"
+            BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+      <DockPanel Margin="8,4">
 
-      <ListBox x:Name="FileListBox" Grid.Row="3"
-               Background="Transparent" BorderThickness="0"
-               ItemContainerStyle="{StaticResource NavItemStyle}"
-               SelectionChanged="FileListBox_SelectionChanged"
-               ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-        <ListBox.ItemTemplate>
-          <DataTemplate>
-            <TextBlock Text="{Binding Name}" TextWrapping="Wrap" FontSize="11.5"/>
-          </DataTemplate>
-        </ListBox.ItemTemplate>
-      </ListBox>
-    </Grid>
+        <TextBlock x:Name="LblSelection" DockPanel.Dock="Right"
+                   VerticalAlignment="Center" FontSize="11"
+                   Foreground="#9E9E9E" Margin="8,0,4,0" Text="No selection"/>
 
-    <!-- ── Main content ────────────────────────────────────────────────────── -->
-    <Grid Grid.Column="1">
-      <Grid.RowDefinitions>
-        <RowDefinition Height="Auto"/>   <!-- row 0: export + zoom toolbar -->
-        <RowDefinition Height="Auto"/>   <!-- row 1: arrange toolbar -->
-        <RowDefinition Height="Auto"/>   <!-- row 2: tools + shape palette -->
-        <RowDefinition Height="*"/>      <!-- row 3: diagram canvas -->
-        <RowDefinition Height="Auto"/>   <!-- row 4: status bar -->
-      </Grid.RowDefinitions>
+        <TextBlock Text="Align:" VerticalAlignment="Center"
+                   Foreground="#757575" FontSize="11" Margin="0,0,4,0"/>
 
-      <!-- ── Toolbar row 1: Export + Zoom ──────────────────────────────────── -->
-      <Border Grid.Row="0" Background="White"
-              BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
-        <DockPanel Margin="8,5">
-          <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-            <Button x:Name="BtnNew" Content="🗋 New"
-                    Style="{StaticResource ToolBtnStyle}"
-                    Click="BtnNew_Click" ToolTip="Create a new blank BPMN diagram"/>
-            <Separator Margin="4,0"/>
-            <TextBlock Text="Export:" VerticalAlignment="Center"
-                       Foreground="#757575" Margin="0,0,6,0" FontSize="12"/>
-            <Button x:Name="BtnExportVsdx" Content="💾 Visio (.vsdx)"
-                    Style="{StaticResource ToolBtnStyle}"
-                    Click="BtnExportVsdx_Click" IsEnabled="False"/>
-            <Button x:Name="BtnExportPdf" Content="📄 PDF"
-                    Style="{StaticResource ToolBtnStyle}"
-                    Click="BtnExportPdf_Click" IsEnabled="False"/>
-            <Button x:Name="BtnExportBpmn" Content="🔄 BPMN (.bpmn)"
-                    Style="{StaticResource ToolBtnStyle}"
-                    Click="BtnExportBpmn_Click" IsEnabled="False"
-                    ToolTip="Export updated layout back to a .bpmn file"/>
-          </StackPanel>
+        <Button x:Name="BtnAlignLeft"  Content="⊣ Left"    Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnAlignLeft_Click"  ToolTip="Align left edges"/>
+        <Button x:Name="BtnAlignCtrH"  Content="↔ Center"  Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnAlignCtrH_Click"  ToolTip="Center horizontally"/>
+        <Button x:Name="BtnAlignRight" Content="⊢ Right"   Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnAlignRight_Click" ToolTip="Align right edges"/>
+        <Separator Margin="4,0"/>
+        <Button x:Name="BtnAlignTop"   Content="⊤ Top"     Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnAlignTop_Click"   ToolTip="Align top edges"/>
+        <Button x:Name="BtnAlignMidV"  Content="↕ Middle"  Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnAlignMidV_Click"  ToolTip="Center vertically"/>
+        <Button x:Name="BtnAlignBot"   Content="⊥ Bottom"  Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnAlignBot_Click"   ToolTip="Align bottom edges"/>
+        <Separator Margin="4,0"/>
+        <Button x:Name="BtnDistribH"   Content="↔ Distrib" Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnDistribH_Click"   ToolTip="Distribute horizontally"/>
+        <Button x:Name="BtnDistribV"   Content="↕ Distrib" Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnDistribV_Click"   ToolTip="Distribute vertically"/>
+        <Separator Margin="6,0"/>
 
-          <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
-            <Button Content="Fit" Style="{StaticResource ToolBtnStyle}"
-                    Click="BtnFit_Click" x:Name="BtnFit" IsEnabled="False"/>
-            <TextBlock Text=" " VerticalAlignment="Center"/>
-            <Button Content="−" Style="{StaticResource ToolBtnStyle}" Width="30"
-                    Click="BtnZoomOut_Click"/>
-            <TextBlock x:Name="ZoomLabel" Text="100%" VerticalAlignment="Center"
-                       Margin="6,0" FontSize="12" MinWidth="40"
-                       TextAlignment="Center"/>
-            <Button Content="+" Style="{StaticResource ToolBtnStyle}" Width="30"
-                    Click="BtnZoomIn_Click"/>
-          </StackPanel>
-        </DockPanel>
-      </Border>
+        <ComboBox x:Name="CboLayout" IsEnabled="False" VerticalAlignment="Center"
+                  MinWidth="155" Margin="3,0" FontSize="11" SelectedIndex="0">
+          <ComboBoxItem Content="→ Left to Right"/>
+          <ComboBoxItem Content="↓ Top to Bottom"/>
+          <ComboBoxItem Content="⟳ Snake (Horizontal)"/>
+          <ComboBoxItem Content="⟳ Snake (Vertical)"/>
+        </ComboBox>
+        <Button x:Name="BtnAutoLayout" Content="Apply Layout"
+                Style="{StaticResource ToolBtnStyle}"
+                IsEnabled="False" Click="BtnAutoLayout_Click"/>
+        <Separator Margin="6,0"/>
+        <CheckBox x:Name="ChkBridges" Content="⌇ Bridges"
+                  VerticalAlignment="Center" Margin="4,0,8,0" FontSize="11"
+                  IsEnabled="False"
+                  Checked="ChkBridges_Toggled" Unchecked="ChkBridges_Toggled"
+                  ToolTip="Draw hop-over arcs where flow lines cross"/>
+      </DockPanel>
+    </Border>
 
-      <!-- ── Toolbar row 2: Arrange ─────────────────────────────────────────── -->
-      <Border Grid.Row="1" Background="#FAFAFA"
-              BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
-        <DockPanel Margin="8,4">
+    <!-- ── Toolbar: Tools + Shape Palette ────────────────────────────────────── -->
+    <Border Grid.Row="3" Background="#EFEFEF"
+            BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+      <DockPanel Margin="8,3">
 
-          <!-- Selection info (right-docked so it doesn't push buttons) -->
-          <TextBlock x:Name="LblSelection" DockPanel.Dock="Right"
-                     VerticalAlignment="Center" FontSize="11"
-                     Foreground="#9E9E9E" Margin="8,0,4,0"
-                     Text="No selection"/>
+        <TextBlock x:Name="LblEditMode" DockPanel.Dock="Right"
+                   VerticalAlignment="Center" FontSize="11" FontStyle="Italic"
+                   Foreground="#1565C0" Margin="8,0,4,0" Text="Select mode"/>
 
-          <!-- Align group label -->
-          <TextBlock Text="Align:" VerticalAlignment="Center"
-                     Foreground="#757575" FontSize="11" Margin="0,0,4,0"/>
+        <TextBlock Text="Tool:" VerticalAlignment="Center"
+                   FontSize="11" Foreground="#757575" Margin="0,0,4,0"/>
+        <Button x:Name="BtnModeSelect"  Content="↖ Select"
+                Style="{StaticResource AlignBtnStyle}" Background="#BBDEFB"
+                Click="BtnModeSelect_Click"  ToolTip="Select / move (Esc)"/>
+        <Button x:Name="BtnModeConnect" Content="↗ Connect"
+                Style="{StaticResource AlignBtnStyle}"
+                Click="BtnModeConnect_Click" ToolTip="Click source then target to create a flow"/>
 
-          <!-- Align buttons -->
-          <Button x:Name="BtnAlignLeft"   Content="⊣ Left"    Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnAlignLeft_Click"   ToolTip="Align left edges"/>
-          <Button x:Name="BtnAlignCtrH"   Content="↔ Center"  Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnAlignCtrH_Click"   ToolTip="Center horizontally"/>
-          <Button x:Name="BtnAlignRight"  Content="⊢ Right"   Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnAlignRight_Click"  ToolTip="Align right edges"/>
+        <Separator Margin="6,0"/>
 
-          <Separator Margin="4,0"/>
+        <TextBlock Text="Add:" VerticalAlignment="Center"
+                   FontSize="11" Foreground="#757575" Margin="0,0,4,0"/>
+        <Button Content="⊙ Start"    Style="{StaticResource AlignBtnStyle}" Tag="StartEvent"             Click="BtnPlaceShape_Click" ToolTip="Start Event"/>
+        <Button Content="⊚ End"      Style="{StaticResource AlignBtnStyle}" Tag="EndEvent"               Click="BtnPlaceShape_Click" ToolTip="End Event"/>
+        <Button Content="◯ Event"    Style="{StaticResource AlignBtnStyle}" Tag="IntermediateCatchEvent" Click="BtnPlaceShape_Click" ToolTip="Intermediate Catch Event"/>
+        <Button Content="▭ Task"     Style="{StaticResource AlignBtnStyle}" Tag="Task"                   Click="BtnPlaceShape_Click" ToolTip="Task"/>
+        <Button Content="👤 User"    Style="{StaticResource AlignBtnStyle}" Tag="UserTask"               Click="BtnPlaceShape_Click" ToolTip="User Task"/>
+        <Button Content="⚙ Service"  Style="{StaticResource AlignBtnStyle}" Tag="ServiceTask"            Click="BtnPlaceShape_Click" ToolTip="Service Task"/>
+        <Button Content="≡ Script"   Style="{StaticResource AlignBtnStyle}" Tag="ScriptTask"             Click="BtnPlaceShape_Click" ToolTip="Script Task"/>
+        <Button Content="◇ Gateway"  Style="{StaticResource AlignBtnStyle}" Tag="ExclusiveGateway"       Click="BtnPlaceShape_Click" ToolTip="Exclusive Gateway"/>
+        <Button Content="⊕ Parallel" Style="{StaticResource AlignBtnStyle}" Tag="ParallelGateway"        Click="BtnPlaceShape_Click" ToolTip="Parallel Gateway"/>
+        <Button Content="⊞ Sub"      Style="{StaticResource AlignBtnStyle}" Tag="SubProcess"             Click="BtnPlaceShape_Click" ToolTip="Sub-Process"/>
 
-          <Button x:Name="BtnAlignTop"    Content="⊤ Top"     Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnAlignTop_Click"    ToolTip="Align top edges"/>
-          <Button x:Name="BtnAlignMidV"   Content="↕ Middle"  Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnAlignMidV_Click"   ToolTip="Center vertically"/>
-          <Button x:Name="BtnAlignBot"    Content="⊥ Bottom"  Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnAlignBot_Click"    ToolTip="Align bottom edges"/>
+        <Separator Margin="6,0"/>
+        <Button x:Name="BtnConnectSelected" Content="↗ Connect 2"
+                Style="{StaticResource AlignBtnStyle}" IsEnabled="False"
+                Click="BtnConnectSelected_Click"
+                ToolTip="Connect 2 selected nodes (left→right order)"/>
+        <Button x:Name="BtnDeleteSelected"  Content="🗑 Delete"
+                Style="{StaticResource AlignBtnStyle}" IsEnabled="False"
+                Click="BtnDeleteSelected_Click" ToolTip="Delete selected (Del)"/>
 
-          <Separator Margin="4,0"/>
+      </DockPanel>
+    </Border>
 
-          <Button x:Name="BtnDistribH"    Content="↔ Distrib" Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnDistribH_Click"    ToolTip="Distribute horizontally"/>
-          <Button x:Name="BtnDistribV"    Content="↕ Distrib" Style="{StaticResource AlignBtnStyle}" IsEnabled="False" Click="BtnDistribV_Click"    ToolTip="Distribute vertically"/>
+    <!-- ── Canvas + Properties panel ────────────────────────────────────────── -->
+    <Grid Grid.Row="4">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
 
-          <Separator Margin="6,0"/>
-
-          <ComboBox x:Name="CboLayout" IsEnabled="False" VerticalAlignment="Center"
-                    MinWidth="160" Margin="3,0" FontSize="11" SelectedIndex="0">
-            <ComboBoxItem Content="→ Left to Right"/>
-            <ComboBoxItem Content="↓ Top to Bottom"/>
-            <ComboBoxItem Content="⟳ Snake (Horizontal)"/>
-            <ComboBoxItem Content="⟳ Snake (Vertical)"/>
-          </ComboBox>
-          <Button x:Name="BtnAutoLayout" Content="Apply Layout" Style="{StaticResource ToolBtnStyle}"
-                  IsEnabled="False" Click="BtnAutoLayout_Click" ToolTip="Apply selected layout algorithm"/>
-
-          <Separator Margin="6,0"/>
-
-          <CheckBox x:Name="ChkBridges" Content="⌇ Bridges"
-                    VerticalAlignment="Center" Margin="4,0,8,0" FontSize="11"
-                    IsEnabled="False"
-                    Checked="ChkBridges_Toggled" Unchecked="ChkBridges_Toggled"
-                    ToolTip="Draw hop-over arcs where flow lines cross"/>
-
-        </DockPanel>
-      </Border>
-
-      <!-- ── Toolbar row 3: Tools + Shape palette ─────────────────────────── -->
-      <Border Grid.Row="2" Background="#EFEFEF"
-              BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
-        <DockPanel Margin="8,3">
-
-          <!-- Mode status (right) -->
-          <TextBlock x:Name="LblEditMode" DockPanel.Dock="Right"
-                     VerticalAlignment="Center" FontSize="11" FontStyle="Italic"
-                     Foreground="#1565C0" Margin="8,0,4,0" Text="Select mode"/>
-
-          <!-- Mode buttons -->
-          <TextBlock Text="Tool:" VerticalAlignment="Center"
-                     FontSize="11" Foreground="#757575" Margin="0,0,4,0"/>
-          <Button x:Name="BtnModeSelect"  Content="↖ Select"
-                  Style="{StaticResource AlignBtnStyle}"
-                  Click="BtnModeSelect_Click"
-                  Background="#BBDEFB"
-                  ToolTip="Select / move elements (Esc)"/>
-          <Button x:Name="BtnModeConnect" Content="↗ Connect"
-                  Style="{StaticResource AlignBtnStyle}"
-                  Click="BtnModeConnect_Click"
-                  ToolTip="Click source node then target node to draw a flow"/>
-
-          <Separator Margin="6,0"/>
-
-          <!-- Shape palette -->
-          <TextBlock Text="Add:" VerticalAlignment="Center"
-                     FontSize="11" Foreground="#757575" Margin="0,0,4,0"/>
-          <Button Content="⊙ Start"    Style="{StaticResource AlignBtnStyle}" Tag="StartEvent"             Click="BtnPlaceShape_Click" ToolTip="Start Event"/>
-          <Button Content="⊚ End"      Style="{StaticResource AlignBtnStyle}" Tag="EndEvent"               Click="BtnPlaceShape_Click" ToolTip="End Event"/>
-          <Button Content="◯ Event"    Style="{StaticResource AlignBtnStyle}" Tag="IntermediateCatchEvent" Click="BtnPlaceShape_Click" ToolTip="Intermediate Catch Event"/>
-          <Button Content="▭ Task"     Style="{StaticResource AlignBtnStyle}" Tag="Task"                   Click="BtnPlaceShape_Click" ToolTip="Generic Task"/>
-          <Button Content="👤 User"    Style="{StaticResource AlignBtnStyle}" Tag="UserTask"               Click="BtnPlaceShape_Click" ToolTip="User Task"/>
-          <Button Content="⚙ Service"  Style="{StaticResource AlignBtnStyle}" Tag="ServiceTask"            Click="BtnPlaceShape_Click" ToolTip="Service Task"/>
-          <Button Content="≡ Script"   Style="{StaticResource AlignBtnStyle}" Tag="ScriptTask"             Click="BtnPlaceShape_Click" ToolTip="Script Task"/>
-          <Button Content="◇ Gateway"  Style="{StaticResource AlignBtnStyle}" Tag="ExclusiveGateway"       Click="BtnPlaceShape_Click" ToolTip="Exclusive Gateway (XOR)"/>
-          <Button Content="⊕ Parallel" Style="{StaticResource AlignBtnStyle}" Tag="ParallelGateway"        Click="BtnPlaceShape_Click" ToolTip="Parallel Gateway (AND)"/>
-          <Button Content="⊞ Sub"      Style="{StaticResource AlignBtnStyle}" Tag="SubProcess"             Click="BtnPlaceShape_Click" ToolTip="Sub-Process"/>
-
-          <Separator Margin="6,0"/>
-
-          <!-- Quick actions -->
-          <Button x:Name="BtnConnectSelected" Content="↗ Connect 2"
-                  Style="{StaticResource AlignBtnStyle}"
-                  IsEnabled="False" Click="BtnConnectSelected_Click"
-                  ToolTip="Draw a flow between the 2 selected nodes (left→right order)"/>
-          <Button x:Name="BtnDeleteSelected" Content="🗑 Delete"
-                  Style="{StaticResource AlignBtnStyle}"
-                  IsEnabled="False" Click="BtnDeleteSelected_Click"
-                  ToolTip="Delete selected nodes / flows (Del)"/>
-
-        </DockPanel>
-      </Border>
-
-      <!-- ── Diagram canvas ─────────────────────────────────────────────────── -->
-      <Border Grid.Row="3" Background="#EAECEF">
+      <!-- Diagram canvas -->
+      <Border Grid.Column="0" Background="#EAECEF">
         <ScrollViewer x:Name="DiagramScrollViewer"
                       HorizontalScrollBarVisibility="Auto"
                       VerticalScrollBarVisibility="Auto"
@@ -278,17 +216,107 @@
         </ScrollViewer>
       </Border>
 
-      <!-- ── Status bar ─────────────────────────────────────────────────────── -->
-      <Border Grid.Row="4" Background="#FAFAFA"
-              BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Padding="14,4">
+      <!-- Properties panel -->
+      <Border Grid.Column="1" x:Name="PropertiesPanel"
+              Width="230" Background="White"
+              BorderBrush="#E0E0E0" BorderThickness="1,0,0,0"
+              Visibility="Collapsed">
         <DockPanel>
-          <TextBlock x:Name="StatusRight" DockPanel.Dock="Right"
-                     FontSize="11" Foreground="#9E9E9E" VerticalAlignment="Center"/>
-          <TextBlock x:Name="StatusLeft"
-                     FontSize="11" Foreground="#616161" VerticalAlignment="Center"
-                     Text="Open a BPMN file using the sidebar button or select one from the recent list."/>
+
+          <!-- Header -->
+          <Border DockPanel.Dock="Top" Background="#F5F5F5"
+                  BorderBrush="#E0E0E0" BorderThickness="0,0,0,1" Padding="10,6">
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Content="✕" Width="20" Height="20"
+                      BorderThickness="0" Background="Transparent" Padding="0"
+                      FontSize="10" Cursor="Hand" VerticalAlignment="Center"
+                      Click="BtnCloseProps_Click" ToolTip="Close properties"/>
+              <TextBlock x:Name="PropTitle" FontWeight="SemiBold" FontSize="12"
+                         Text="Properties" VerticalAlignment="Center"/>
+            </DockPanel>
+          </Border>
+
+          <!-- Fields -->
+          <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="10,4,10,8">
+
+              <!-- Type badge -->
+              <TextBlock Style="{StaticResource PropLabelStyle}" Text="TYPE"/>
+              <Border x:Name="PropTypeBadge" CornerRadius="3" Padding="6,2"
+                      HorizontalAlignment="Left" Margin="0,0,0,2">
+                <TextBlock x:Name="PropType" FontSize="11" FontWeight="SemiBold"
+                           Foreground="White" Text="Task"/>
+              </Border>
+
+              <!-- Name (shared node + flow) -->
+              <TextBlock Style="{StaticResource PropLabelStyle}" Text="NAME"/>
+              <TextBox x:Name="PropName" Style="{StaticResource PropInputStyle}"
+                       LostFocus="Prop_LostFocus" KeyDown="Prop_KeyDown" Tag="Name"/>
+
+              <!-- Node-only fields -->
+              <StackPanel x:Name="NodeOnlyProps">
+                <TextBlock Style="{StaticResource PropLabelStyle}" Text="POSITION"/>
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition/><ColumnDefinition Width="6"/><ColumnDefinition/>
+                  </Grid.ColumnDefinitions>
+                  <StackPanel Grid.Column="0">
+                    <TextBlock Text="X" FontSize="9" Foreground="#BDBDBD" Margin="0,0,0,1"/>
+                    <TextBox x:Name="PropX" Style="{StaticResource PropInputStyle}"
+                             LostFocus="Prop_LostFocus" KeyDown="Prop_KeyDown" Tag="X"/>
+                  </StackPanel>
+                  <StackPanel Grid.Column="2">
+                    <TextBlock Text="Y" FontSize="9" Foreground="#BDBDBD" Margin="0,0,0,1"/>
+                    <TextBox x:Name="PropY" Style="{StaticResource PropInputStyle}"
+                             LostFocus="Prop_LostFocus" KeyDown="Prop_KeyDown" Tag="Y"/>
+                  </StackPanel>
+                </Grid>
+
+                <TextBlock Style="{StaticResource PropLabelStyle}" Text="SIZE"/>
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition/><ColumnDefinition Width="6"/><ColumnDefinition/>
+                  </Grid.ColumnDefinitions>
+                  <StackPanel Grid.Column="0">
+                    <TextBlock Text="W" FontSize="9" Foreground="#BDBDBD" Margin="0,0,0,1"/>
+                    <TextBox x:Name="PropW" Style="{StaticResource PropInputStyle}"
+                             LostFocus="Prop_LostFocus" KeyDown="Prop_KeyDown" Tag="W"/>
+                  </StackPanel>
+                  <StackPanel Grid.Column="2">
+                    <TextBlock Text="H" FontSize="9" Foreground="#BDBDBD" Margin="0,0,0,1"/>
+                    <TextBox x:Name="PropH" Style="{StaticResource PropInputStyle}"
+                             LostFocus="Prop_LostFocus" KeyDown="Prop_KeyDown" Tag="H"/>
+                  </StackPanel>
+                </Grid>
+              </StackPanel>
+
+              <!-- Flow-only fields -->
+              <StackPanel x:Name="FlowOnlyProps" Visibility="Collapsed">
+                <TextBlock Style="{StaticResource PropLabelStyle}" Text="FROM"/>
+                <TextBlock x:Name="PropFlowFrom" FontSize="12" TextWrapping="Wrap"/>
+                <TextBlock Style="{StaticResource PropLabelStyle}" Text="TO"/>
+                <TextBlock x:Name="PropFlowTo"   FontSize="12" TextWrapping="Wrap"/>
+              </StackPanel>
+
+            </StackPanel>
+          </ScrollViewer>
+
         </DockPanel>
       </Border>
+
     </Grid>
+
+    <!-- ── Status bar ────────────────────────────────────────────────────────── -->
+    <Border Grid.Row="5" Background="#FAFAFA"
+            BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Padding="14,4">
+      <DockPanel>
+        <TextBlock x:Name="StatusRight" DockPanel.Dock="Right"
+                   FontSize="11" Foreground="#9E9E9E" VerticalAlignment="Center"/>
+        <TextBlock x:Name="StatusLeft"
+                   FontSize="11" Foreground="#616161" VerticalAlignment="Center"
+                   Text="Use File → New or File → Open to get started."/>
+      </DockPanel>
+    </Border>
+
   </Grid>
 </Window>
