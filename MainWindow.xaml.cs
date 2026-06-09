@@ -494,6 +494,11 @@ public partial class MainWindow : Window
             FitDiagram();
             StatusLeft.Text = $"Layout applied: {((ComboBoxItem)CboLayout.SelectedItem).Content}";
         }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Layout failed:\n{ex.Message}", "Layout Error",
+                            MessageBoxButton.OK, MessageBoxImage.Error);
+        }
         finally
         {
             Mouse.OverrideCursor = null;

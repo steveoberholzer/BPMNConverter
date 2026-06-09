@@ -64,10 +64,12 @@ public static class LayoutEngine
             }
         }
 
-        // Build layers
-        int maxRank = rank.Values.DefaultIfEmpty(0).Max();
-        var layers  = Enumerable.Range(0, maxRank + 1)
-            .Select(r => nodes.Where(n => rank[n.Id] == r).ToList())
+        // Build layers — GroupBy is gap-proof even when the safety counter
+        // exhausted early and some ranks were skipped.
+        var layers = nodes
+            .GroupBy(n => rank[n.Id])
+            .OrderBy(g => g.Key)
+            .Select(g => g.ToList())
             .ToList();
 
         // Barycenter crossing minimisation (8 forward+backward sweeps)
