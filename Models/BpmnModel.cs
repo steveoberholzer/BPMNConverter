@@ -56,6 +56,7 @@ public class BpmnModel
     public List<BpmnFlow> Flows { get; set; } = [];
 
     public BpmnNode? GetNode(string id) => Nodes.FirstOrDefault(n => n.Id == id);
+    public BpmnFlow? GetFlow(string id) => Flows.FirstOrDefault(f => f.Id == id);
 
     public (double minX, double minY, double maxX, double maxY) GetBounds()
     {

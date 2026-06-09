@@ -262,12 +262,52 @@ public static class LayoutEngine
         {
             if (!map.TryGetValue(flow.SourceRef, out var src) ||
                 !map.TryGetValue(flow.TargetRef, out var tgt)) continue;
-            flow.Waypoints =
-            [
-                (src.X + src.Width  / 2, src.Y + src.Height / 2),
-                (tgt.X + tgt.Width  / 2, tgt.Y + tgt.Height / 2)
-            ];
+            flow.Waypoints = ComputeElbow(src, tgt);
         }
+    }
+
+    /// <summary>
+    /// Computes a 4-point orthogonal (elbow) route from src to tgt.
+    /// Points exit and enter each node at the nearest edge midpoint,
+    /// then bend once at the midpoint between the two exit/entry coords.
+    /// </summary>
+    public static List<(double X, double Y)> ComputeElbow(BpmnNode src, BpmnNode tgt)
+    {
+        double scx = src.X + src.Width  / 2, scy = src.Y + src.Height / 2;
+        double tcx = tgt.X + tgt.Width  / 2, tcy = tgt.Y + tgt.Height / 2;
+
+        var (ex, ey) = ClipToEdgeModel(scx, scy, tcx, tcy, src);
+        var (ix, iy) = ClipToEdgeModel(tcx, tcy, scx, scy, tgt);
+
+        double adx = Math.Abs(tcx - scx);
+        double ady = Math.Abs(tcy - scy);
+
+        if (adx >= ady)  // more horizontal → H-V-H
+        {
+            double midX = (ex + ix) / 2;
+            return [(ex, ey), (midX, ey), (midX, iy), (ix, iy)];
+        }
+        else             // more vertical → V-H-V
+        {
+            double midY = (ey + iy) / 2;
+            return [(ex, ey), (ex, midY), (ix, midY), (ix, iy)];
+        }
+    }
+
+    private static (double X, double Y) ClipToEdgeModel(
+        double cx, double cy, double tx, double ty, BpmnNode n)
+    {
+        double dx = tx - cx, dy = ty - cy;
+        if (Math.Abs(dx) < 0.001 && Math.Abs(dy) < 0.001) return (cx, cy);
+
+        double l = n.X, t = n.Y, r = l + n.Width, b = t + n.Height;
+        double tMin = double.MaxValue;
+        if (dx > 0) tMin = Math.Min(tMin, (r - cx) / dx);
+        else if (dx < 0) tMin = Math.Min(tMin, (l - cx) / dx);
+        if (dy > 0) tMin = Math.Min(tMin, (b - cy) / dy);
+        else if (dy < 0) tMin = Math.Min(tMin, (t - cy) / dy);
+
+        return (cx + dx * tMin, cy + dy * tMin);
     }
 
     private static double Percentile(IEnumerable<double> values, double p)

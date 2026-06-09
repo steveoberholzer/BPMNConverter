@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using DiagramApp.Models;
@@ -17,8 +18,23 @@ public class BpmnRenderer
     // When true, crossing flow lines get a hop-over bridge arc
     public bool ShowBridges { get; set; }
 
-    private readonly List<UIElement>         _flowElements = new();
-    private readonly List<(Point A, Point B)> _flowSegments = new();
+    private readonly List<UIElement>           _flowElements   = new();
+    private readonly List<(Point A, Point B)>  _flowSegments   = new();
+    // Per-flow lookups so MainWindow can highlight selected flows
+    private readonly Dictionary<string, Polyline>  _flowVisuals    = new();
+    private readonly Dictionary<string, UIElement> _flowHitTargets = new();
+
+    public IReadOnlyDictionary<string, UIElement> FlowHitTargets => _flowHitTargets;
+
+    public void SetFlowSelected(string flowId, bool selected)
+    {
+        if (!_flowVisuals.TryGetValue(flowId, out var poly)) return;
+        poly.Stroke          = selected ? SelectedFlowBrush() : FlowBrush();
+        poly.StrokeThickness = selected ? 2.5 : 1.5;
+    }
+
+    private static SolidColorBrush SelectedFlowBrush() =>
+        new(Color.FromRgb(25, 118, 210));
 
     // ── Public API ─────────────────────────────────────────────────────────────
 
@@ -28,6 +44,8 @@ public class BpmnRenderer
     {
         canvas.Children.Clear();
         _flowElements.Clear();
+        _flowVisuals.Clear();
+        _flowHitTargets.Clear();
         var containers = new Dictionary<string, Canvas>();
 
         if (model.Nodes.Count == 0)
@@ -60,6 +78,8 @@ public class BpmnRenderer
         foreach (var e in _flowElements)
             canvas.Children.Remove(e);
         _flowElements.Clear();
+        _flowVisuals.Clear();
+        _flowHitTargets.Clear();
 
         DrawFlowsFromContainers(model, canvas, containers);
     }
@@ -122,7 +142,7 @@ public class BpmnRenderer
                 .Select(p => new Point(OffsetX + p.X, OffsetY + p.Y))
                 .ToArray();
 
-            RenderFlowLines(canvas, pts, brush);
+            RenderFlowPolyline(canvas, flow.Id, pts, brush);
 
             if (!string.IsNullOrWhiteSpace(flow.Name))
                 RenderFlowLabel(canvas, pts[pts.Length / 2], flow.Name);
@@ -141,47 +161,86 @@ public class BpmnRenderer
 
         foreach (var flow in model.Flows)
         {
-            Point from, to;
+            Point[] pts;
 
             if (containers.TryGetValue(flow.SourceRef, out var srcC) &&
                 containers.TryGetValue(flow.TargetRef, out var tgtC))
             {
-                var srcCenter = ContainerCenter(srcC);
-                var tgtCenter = ContainerCenter(tgtC);
-                from = ClipToEdge(srcCenter, tgtCenter, srcC);
-                to   = ClipToEdge(tgtCenter, srcCenter, tgtC);
+                pts = ElbowPts(srcC, tgtC);
             }
             else if (flow.Waypoints.Count >= 2)
             {
-                from = new Point(OffsetX + flow.Waypoints[0].X,  OffsetY + flow.Waypoints[0].Y);
-                to   = new Point(OffsetX + flow.Waypoints[^1].X, OffsetY + flow.Waypoints[^1].Y);
+                pts = flow.Waypoints
+                    .Select(p => new Point(OffsetX + p.X, OffsetY + p.Y))
+                    .ToArray();
             }
             else continue;
 
-            RenderFlowLines(canvas, [from, to], brush);
+            RenderFlowPolyline(canvas, flow.Id, pts, brush);
 
             if (!string.IsNullOrWhiteSpace(flow.Name))
-                RenderFlowLabel(canvas, new Point((from.X + to.X) / 2, (from.Y + to.Y) / 2), flow.Name);
+                RenderFlowLabel(canvas, pts[pts.Length / 2], flow.Name);
         }
 
         if (ShowBridges) DrawBridges(canvas);
     }
 
-    private void RenderFlowLines(Canvas canvas, Point[] pts, SolidColorBrush brush)
+    private void RenderFlowPolyline(Canvas canvas, string flowId, Point[] pts, SolidColorBrush brush)
     {
-        for (int i = 0; i < pts.Length - 1; i++)
+        // Visible polyline (non-hittable — all clicks go to the transparent overlay)
+        var poly = new Polyline
         {
-            AddFlowElement(canvas, new Line
-            {
-                X1 = pts[i].X, Y1 = pts[i].Y,
-                X2 = pts[i + 1].X, Y2 = pts[i + 1].Y,
-                Stroke = brush, StrokeThickness = 1.5
-            });
+            Points           = new PointCollection(pts),
+            Stroke           = brush,
+            StrokeThickness  = 1.5,
+            Fill             = Brushes.Transparent,
+            StrokeLineJoin   = PenLineJoin.Miter,
+            IsHitTestVisible = false
+        };
+        _flowVisuals[flowId] = poly;
+        AddFlowElement(canvas, poly);
 
-            if (ShowBridges)
-                _flowSegments.Add((pts[i], pts[i + 1]));
-        }
+        // Wide transparent overlay — easy to click even on thin lines
+        var overlay = new Polyline
+        {
+            Points           = new PointCollection(pts),
+            Stroke           = Brushes.Transparent,
+            StrokeThickness  = 10,
+            Fill             = Brushes.Transparent,
+            Tag              = flowId,
+            Cursor           = Cursors.Hand,
+            IsHitTestVisible = true
+        };
+        _flowHitTargets[flowId] = overlay;
+        AddFlowElement(canvas, overlay);
+
         DrawArrowhead(canvas, pts[^2], pts[^1], brush);
+
+        if (ShowBridges)
+            for (int i = 0; i < pts.Length - 1; i++)
+                _flowSegments.Add((pts[i], pts[i + 1]));
+    }
+
+    // Computes a 4-point orthogonal elbow path in canvas coordinates.
+    private static Point[] ElbowPts(Canvas srcC, Canvas tgtC)
+    {
+        var sc  = ContainerCenter(srcC);
+        var tc  = ContainerCenter(tgtC);
+        var ex  = ClipToEdge(sc, tc, srcC);
+        var ix  = ClipToEdge(tc, sc, tgtC);
+        double adx = Math.Abs(tc.X - sc.X);
+        double ady = Math.Abs(tc.Y - sc.Y);
+
+        if (adx >= ady)  // H-V-H
+        {
+            double midX = (ex.X + ix.X) / 2;
+            return [ex, new(midX, ex.Y), new(midX, ix.Y), ix];
+        }
+        else             // V-H-V
+        {
+            double midY = (ex.Y + ix.Y) / 2;
+            return [ex, new(ex.X, midY), new(ix.X, midY), ix];
+        }
     }
 
     private void RenderFlowLabel(Canvas canvas, Point mid, string text)

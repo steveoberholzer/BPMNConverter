@@ -29,6 +29,16 @@ public partial class MainWindow : Window
 
     private record FileItem(string Name, string FullPath);
 
+    // ── Edit modes ────────────────────────────────────────────────────────────
+
+    private enum EditMode { Select, Place, Connect }
+    private EditMode    _editMode        = EditMode.Select;
+    private BpmnNodeType _placingType;
+    private string?     _connectSourceId;                    // first click in Connect mode
+
+    // Flow selection (separate from node selection)
+    private readonly HashSet<string> _selectedFlowIds = new();
+
     // ── Edit state ────────────────────────────────────────────────────────────
 
     private Dictionary<string, Canvas> _nodeContainers = new();
@@ -132,13 +142,8 @@ public partial class MainWindow : Window
             StatusRight.Text = $"{nodes} elements · {flows} flows" +
                                (pools > 0 ? $" · {pools} pool(s)" : "");
 
-            BtnExportVsdx.IsEnabled  = true;
-            BtnExportPdf.IsEnabled   = true;
-            BtnExportBpmn.IsEnabled  = true;
-            BtnFit.IsEnabled         = true;
-            BtnAutoLayout.IsEnabled  = true;
-            CboLayout.IsEnabled      = true;
-            ChkBridges.IsEnabled     = true;
+            EnableAllTools();
+            SetEditMode(EditMode.Select);
 
             FitDiagram();
         }
@@ -160,12 +165,14 @@ public partial class MainWindow : Window
         if (_currentModel == null) return;
 
         DeselectAll(notify: false);
+        DeselectAllFlows(notify: false);
         _nodeContainers.Clear();
 
         var (w, h, containers) = _renderer.Render(_currentModel, DiagramCanvas);
         _nodeContainers = containers;
         _diagramSize    = (w, h);
 
+        AttachFlowHitEvents();
         UpdateEditToolbarState();
     }
 
@@ -195,9 +202,11 @@ public partial class MainWindow : Window
         Mouse.OverrideCursor = Cursors.Wait;
         try
         {
-            // Make sure in-memory model reflects latest drag/align positions
             SyncContainerPositionsToModel();
-            _writer.Save(_currentModel, _currentFile, dlg.FileName);
+            if (_currentFile != null)
+                _writer.Save(_currentModel, _currentFile, dlg.FileName);
+            else
+                _writer.Create(_currentModel, dlg.FileName);
             StatusLeft.Text = $"BPMN exported → {dlg.FileName}";
             MessageBox.Show($"Saved to:\n{dlg.FileName}", "BPMN Export Complete",
                             MessageBoxButton.OK, MessageBoxImage.Information);
@@ -290,35 +299,77 @@ public partial class MainWindow : Window
     {
         if (_currentModel == null) return;
 
-        var pos       = e.GetPosition(DiagramCanvas);
-        var container = FindNodeContainer(e.OriginalSource as DependencyObject);
-
+        var pos  = e.GetPosition(DiagramCanvas);
         bool ctrl = (Keyboard.Modifiers & ModifierKeys.Control) != 0;
 
-        if (container?.Tag is string nodeId)
+        switch (_editMode)
         {
-            if (ctrl)
-            {
-                ToggleSelection(nodeId);
-            }
-            else
-            {
-                if (!_selectedIds.Contains(nodeId))
-                {
-                    DeselectAll(notify: false);
-                    AddToSelection(nodeId);
-                }
-                // Always start a potential drag when clicking a selected node
-                BeginDrag(pos);
-            }
-        }
-        else
-        {
-            // Click on background — clear selection
-            DeselectAll();
-        }
+            case EditMode.Place:
+                PlaceNodeAt(pos);
+                e.Handled = true;
+                return;
 
-        e.Handled = true;
+            case EditMode.Connect:
+            {
+                var container = FindNodeContainer(e.OriginalSource as DependencyObject);
+                if (container?.Tag is string nodeId)
+                {
+                    if (_connectSourceId == null)
+                    {
+                        _connectSourceId = nodeId;
+                        SetConnectionHighlight(nodeId, true);
+                        LblEditMode.Text = "Connect: now click the target node";
+                    }
+                    else if (nodeId != _connectSourceId)
+                    {
+                        CreateFlow(_connectSourceId, nodeId);
+                        SetConnectionHighlight(_connectSourceId, false);
+                        _connectSourceId = null;
+                        SetEditMode(EditMode.Select);
+                    }
+                }
+                else
+                {
+                    // Background click — cancel
+                    if (_connectSourceId != null)
+                        SetConnectionHighlight(_connectSourceId, false);
+                    _connectSourceId = null;
+                    SetEditMode(EditMode.Select);
+                }
+                e.Handled = true;
+                return;
+            }
+
+            default: // Select
+            {
+                var container = FindNodeContainer(e.OriginalSource as DependencyObject);
+                if (container?.Tag is string nodeId)
+                {
+                    if (ctrl)
+                    {
+                        DeselectAllFlows(notify: false);
+                        ToggleSelection(nodeId);
+                    }
+                    else
+                    {
+                        if (!_selectedIds.Contains(nodeId))
+                        {
+                            DeselectAllFlows(notify: false);
+                            DeselectAll(notify: false);
+                            AddToSelection(nodeId);
+                        }
+                        BeginDrag(pos);
+                    }
+                }
+                else
+                {
+                    DeselectAllFlows();
+                    DeselectAll();
+                }
+                e.Handled = true;
+                return;
+            }
+        }
     }
 
     private void Canvas_MouseMove(object sender, MouseEventArgs e)
@@ -353,11 +404,10 @@ public partial class MainWindow : Window
         _dragOrigins.Clear();
         DiagramCanvas.ReleaseMouseCapture();
 
-        // Commit moved positions back to the model
         SyncContainerPositionsToModel();
-
-        // Final flow redraw and canvas resize
         _renderer.RedrawFlows(_currentModel!, DiagramCanvas, _nodeContainers);
+        AttachFlowHitEvents();
+        foreach (var fid in _selectedFlowIds) _renderer.SetFlowSelected(fid, true);
         ResizeCanvasToFitContent();
     }
 
@@ -431,10 +481,18 @@ public partial class MainWindow : Window
 
     private void UpdateEditToolbarState()
     {
-        int n = _selectedIds.Count;
-        LblSelection.Text = n == 0 ? "No selection"
-                          : n == 1 ? "1 node selected"
-                          : $"{n} nodes selected";
+        int n  = _selectedIds.Count;
+        int nf = _selectedFlowIds.Count;
+
+        LblSelection.Text = (n, nf) switch
+        {
+            (0, 0) => "No selection",
+            (1, 0) => "1 node selected",
+            (0, 1) => "1 flow selected",
+            _ when nf == 0 => $"{n} nodes selected",
+            _ when n  == 0 => $"{nf} flows selected",
+            _              => $"{n} nodes, {nf} flows selected"
+        };
 
         bool two = n >= 2;
         BtnAlignLeft.IsEnabled  = two;
@@ -445,6 +503,9 @@ public partial class MainWindow : Window
         BtnAlignBot.IsEnabled   = two;
         BtnDistribH.IsEnabled   = n >= 3;
         BtnDistribV.IsEnabled   = n >= 3;
+
+        BtnConnectSelected.IsEnabled = n == 2 && nf == 0;
+        BtnDeleteSelected.IsEnabled  = n > 0 || nf > 0;
     }
 
     // ── Align operations ──────────────────────────────────────────────────────
@@ -566,6 +627,278 @@ public partial class MainWindow : Window
         }
     }
 
+    // ── New document ──────────────────────────────────────────────────────────
+
+    private void BtnNew_Click(object sender, RoutedEventArgs e)
+    {
+        var model = new BpmnModel { Name = "New Process" };
+
+        var start = MakeNode(BpmnNodeType.StartEvent,  "Start",  80,  182);
+        var task  = MakeNode(BpmnNodeType.Task,        "Task",  200,  160);
+        var end   = MakeNode(BpmnNodeType.EndEvent,    "End",   380,  182);
+        model.Nodes.AddRange([start, task, end]);
+        model.Flows.Add(new BpmnFlow { Id = "Flow_1",
+            SourceRef = start.Id, TargetRef = task.Id,
+            Waypoints = LayoutEngine.ComputeElbow(start, task) });
+        model.Flows.Add(new BpmnFlow { Id = "Flow_2",
+            SourceRef = task.Id,  TargetRef = end.Id,
+            Waypoints = LayoutEngine.ComputeElbow(task, end) });
+
+        _currentModel = model;
+        _currentFile  = null;
+
+        EnableAllTools();
+        RenderModel();
+        FitDiagram();
+        SetEditMode(EditMode.Select);
+        StatusLeft.Text  = "New BPMN process — add shapes from the palette, connect them, then export.";
+        StatusRight.Text = "3 elements · 2 flows · Unsaved";
+    }
+
+    // ── Edit mode management ──────────────────────────────────────────────────
+
+    private void SetEditMode(EditMode mode, BpmnNodeType placing = default)
+    {
+        _editMode    = mode;
+        _placingType = placing;
+
+        if (mode != EditMode.Connect && _connectSourceId != null)
+        {
+            SetConnectionHighlight(_connectSourceId, false);
+            _connectSourceId = null;
+        }
+
+        DiagramCanvas.Cursor = mode is EditMode.Place or EditMode.Connect
+            ? Cursors.Cross : null;
+
+        LblEditMode.Text = mode switch
+        {
+            EditMode.Place   => $"Click canvas to place {TypeLabel(placing)}  (Esc = cancel)",
+            EditMode.Connect => "Click source node, then target node  (Esc = cancel)",
+            _                => "Select mode"
+        };
+
+        // Visual active-state on mode buttons
+        var active   = new SolidColorBrush(Color.FromRgb(187, 222, 251));
+        var inactive = SystemColors.ControlBrush;
+        BtnModeSelect.Background  = mode == EditMode.Select  ? active : inactive;
+        BtnModeConnect.Background = mode == EditMode.Connect ? active : inactive;
+    }
+
+    private void BtnModeSelect_Click(object sender, RoutedEventArgs e)  => SetEditMode(EditMode.Select);
+    private void BtnModeConnect_Click(object sender, RoutedEventArgs e) => SetEditMode(EditMode.Connect);
+
+    private void BtnPlaceShape_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn) return;
+        if (!Enum.TryParse<BpmnNodeType>(btn.Tag as string ?? "", out var type)) return;
+        SetEditMode(EditMode.Place, type);
+    }
+
+    // ── Shape placement ───────────────────────────────────────────────────────
+
+    private void PlaceNodeAt(Point canvasPos)
+    {
+        if (_currentModel == null) return;
+
+        var (w, h) = ShapeSize(_placingType);
+        double mx = canvasPos.X - _renderer.OffsetX - w / 2;
+        double my = canvasPos.Y - _renderer.OffsetY - h / 2;
+        var node = MakeNode(_placingType, TypeLabel(_placingType), mx, my);
+        _currentModel.Nodes.Add(node);
+
+        RenderModel();
+        StatusLeft.Text = $"Placed {TypeLabel(_placingType)} — click again to place another, or press Esc.";
+    }
+
+    // ── Flow creation / connection ────────────────────────────────────────────
+
+    private void CreateFlow(string sourceId, string targetId)
+    {
+        if (_currentModel == null) return;
+        var src = _currentModel.GetNode(sourceId);
+        var tgt = _currentModel.GetNode(targetId);
+        if (src == null || tgt == null) return;
+
+        var flow = new BpmnFlow
+        {
+            Id        = $"Flow_{Guid.NewGuid():N}"[..13],
+            SourceRef = sourceId,
+            TargetRef = targetId,
+            Waypoints = LayoutEngine.ComputeElbow(src, tgt)
+        };
+        _currentModel.Flows.Add(flow);
+        RenderModel();
+        StatusLeft.Text = $"Flow created: {src.Name} → {tgt.Name}";
+    }
+
+    private void BtnConnectSelected_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedIds.Count != 2 || _currentModel == null) return;
+        // Connect left-to-right (by X position)
+        var ordered = _selectedIds
+            .Select(id => _currentModel.GetNode(id)!)
+            .Where(n => n != null)
+            .OrderBy(n => n.X)
+            .ToList();
+        if (ordered.Count == 2) CreateFlow(ordered[0].Id, ordered[1].Id);
+    }
+
+    // ── Delete ────────────────────────────────────────────────────────────────
+
+    private void BtnDeleteSelected_Click(object sender, RoutedEventArgs e) => DeleteSelected();
+
+    private void DeleteSelected()
+    {
+        if (_currentModel == null) return;
+        bool changed = false;
+
+        foreach (var fid in _selectedFlowIds.ToList())
+        {
+            var f = _currentModel.GetFlow(fid);
+            if (f == null) continue;
+            _currentModel.Flows.Remove(f);
+            changed = true;
+        }
+        _selectedFlowIds.Clear();
+
+        foreach (var nid in _selectedIds.ToList())
+        {
+            var n = _currentModel.GetNode(nid);
+            if (n == null) continue;
+            // Remove connected flows first
+            foreach (var f in _currentModel.Flows
+                .Where(f => f.SourceRef == nid || f.TargetRef == nid).ToList())
+                _currentModel.Flows.Remove(f);
+            _currentModel.Nodes.Remove(n);
+            changed = true;
+        }
+        _selectedIds.Clear();
+
+        if (changed) RenderModel();
+    }
+
+    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
+        {
+            SetEditMode(EditMode.Select);
+            e.Handled = true;
+            return;
+        }
+        if ((e.Key == Key.Delete || e.Key == Key.Back)
+            && Keyboard.FocusedElement is not TextBox)
+        {
+            DeleteSelected();
+            e.Handled = true;
+        }
+    }
+
+    // ── Flow selection ────────────────────────────────────────────────────────
+
+    private void AttachFlowHitEvents()
+    {
+        foreach (var (flowId, hitTarget) in _renderer.FlowHitTargets)
+        {
+            var id = flowId;
+            hitTarget.MouseLeftButtonDown += (_, e) =>
+            {
+                if (_editMode != EditMode.Select) return;
+                bool ctrl = (Keyboard.Modifiers & ModifierKeys.Control) != 0;
+                if (ctrl)
+                {
+                    DeselectAll(notify: false);
+                    if (_selectedFlowIds.Contains(id)) { _selectedFlowIds.Remove(id); _renderer.SetFlowSelected(id, false); }
+                    else                               { _selectedFlowIds.Add(id);    _renderer.SetFlowSelected(id, true);  }
+                }
+                else
+                {
+                    DeselectAll(notify: false);
+                    DeselectAllFlows(notify: false);
+                    _selectedFlowIds.Add(id);
+                    _renderer.SetFlowSelected(id, true);
+                }
+                UpdateEditToolbarState();
+                e.Handled = true;
+            };
+        }
+    }
+
+    private void DeselectAllFlows(bool notify = true)
+    {
+        foreach (var id in _selectedFlowIds)
+            _renderer.SetFlowSelected(id, false);
+        _selectedFlowIds.Clear();
+        if (notify) UpdateEditToolbarState();
+    }
+
+    // ── Connection highlight (orange overlay when in Connect mode) ────────────
+
+    private void SetConnectionHighlight(string nodeId, bool on)
+    {
+        if (!_nodeContainers.TryGetValue(nodeId, out var c)) return;
+        var overlay = c.Children.OfType<Rectangle>()
+                       .FirstOrDefault(r => r.Tag is "sel-overlay");
+        if (overlay == null) return;
+        overlay.Stroke     = on ? new SolidColorBrush(Color.FromRgb(230, 81, 0))
+                                : new SolidColorBrush(Color.FromRgb(25, 118, 210));
+        overlay.Fill       = on ? new SolidColorBrush(Color.FromArgb(30, 230, 81, 0))
+                                : new SolidColorBrush(Color.FromArgb(20, 25, 118, 210));
+        overlay.Visibility = Visibility.Visible;
+    }
+
+    // ── Shape helpers ─────────────────────────────────────────────────────────
+
+    private static BpmnNode MakeNode(BpmnNodeType type, string name, double x, double y)
+    {
+        var (w, h) = ShapeSize(type);
+        return new BpmnNode
+        {
+            Id     = $"{type}_{Guid.NewGuid():N}"[..(type.ToString().Length + 9)],
+            Name   = name,
+            Type   = type,
+            X      = x, Y = y,
+            Width  = w, Height = h
+        };
+    }
+
+    private static (double W, double H) ShapeSize(BpmnNodeType type) => type switch
+    {
+        BpmnNodeType.StartEvent or BpmnNodeType.EndEvent or
+        BpmnNodeType.IntermediateCatchEvent or BpmnNodeType.IntermediateThrowEvent => (36, 36),
+        BpmnNodeType.ExclusiveGateway or BpmnNodeType.ParallelGateway or
+        BpmnNodeType.InclusiveGateway or BpmnNodeType.EventBasedGateway or
+        BpmnNodeType.ComplexGateway => (50, 50),
+        BpmnNodeType.SubProcess => (150, 100),
+        _ => (100, 80)
+    };
+
+    private static string TypeLabel(BpmnNodeType type) => type switch
+    {
+        BpmnNodeType.StartEvent             => "Start Event",
+        BpmnNodeType.EndEvent               => "End Event",
+        BpmnNodeType.IntermediateCatchEvent => "Intermediate Event",
+        BpmnNodeType.Task                   => "Task",
+        BpmnNodeType.UserTask               => "User Task",
+        BpmnNodeType.ServiceTask            => "Service Task",
+        BpmnNodeType.ScriptTask             => "Script Task",
+        BpmnNodeType.ExclusiveGateway       => "Exclusive Gateway",
+        BpmnNodeType.ParallelGateway        => "Parallel Gateway",
+        BpmnNodeType.SubProcess             => "Sub-Process",
+        _                                   => type.ToString()
+    };
+
+    private void EnableAllTools()
+    {
+        BtnExportVsdx.IsEnabled = true;
+        BtnExportPdf.IsEnabled  = true;
+        BtnExportBpmn.IsEnabled = true;
+        BtnFit.IsEnabled        = true;
+        BtnAutoLayout.IsEnabled = true;
+        CboLayout.IsEnabled     = true;
+        ChkBridges.IsEnabled    = true;
+    }
+
     // ── Internal helpers ──────────────────────────────────────────────────────
 
     private IEnumerable<(string Id, Canvas C)> SelectedContainers() =>
@@ -581,6 +914,8 @@ public partial class MainWindow : Window
     {
         SyncContainerPositionsToModel();
         _renderer.RedrawFlows(_currentModel!, DiagramCanvas, _nodeContainers);
+        AttachFlowHitEvents();
+        foreach (var fid in _selectedFlowIds) _renderer.SetFlowSelected(fid, true);
         ResizeCanvasToFitContent();
     }
 
